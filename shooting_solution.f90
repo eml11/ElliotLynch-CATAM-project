@@ -6,6 +6,8 @@ subroutine readinputfile (unit,filename)
   integer :: ios = 0
   integer :: pos = 0
 
+  open(unit,file=filename)
+
   do while (ios.eq.0)
 
     read(unit, '(A)', iostat=ios) buf

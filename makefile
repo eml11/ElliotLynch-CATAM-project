@@ -16,7 +16,7 @@ $(SRC)/shooting_solution.o: $(SRC)/shooting_solution.f90 $(SRC)/mod_shared.o
 	cd $(SRC); $(CC) -I$(SRC) -c shooting_solution.f90 mod_shared.o
 
 $(SRC)/read_io.o: $(SRC)/read_io.f90 $(SRC)/mod_shared.o
-	cd $(SRC); $(CC) -I$(SRC) -c mod_shared.mod mod_shared.o
+	cd $(SRC); $(CC) -I$(SRC) -c read_io.f90 mod_shared.o
 
 $(SRC)/mod_shared.o: $(SRC)/mod_shared.f90 
 	cd $(SRC); $(CC) -c mod_shared.f90

@@ -1,19 +1,21 @@
-subroutine readinputfile (unitinput,filename)
+subroutine readinputfile (unitinput,fname)
 
   use mod_shared
 
+  implicit none
+
   integer :: unitinput
-  character(len=256) :: filename
+  character(len=*) :: fname
   character (len=256) :: buf, label
   integer :: ios = 0
   integer :: pos = 0
 
-  open(unitinput,file=filename)
+  open(unit=unitinput,file=fname)
 
   do while (ios.eq.0)
 
     read(unitinput, '(A)', iostat=ios) buf
-    
+
     if (ios.eq.0) then
     
       pos = scan(buf, '    ')
@@ -22,17 +24,17 @@ subroutine readinputfile (unitinput,filename)
 
       select case (label)
         case ('RADIUSS')
-
+          read(buf, *, iostat=ios) radiusstar
         case ('GAMMA')
-
+          read(buf, *, iostat=ios) ratiospecificheat
         case ('MASSM')
-
+          read(buf, *, iostat=ios) massm
         case('MASST')
-
+          read(buf, *, iostat=ios) masst
         case('PRESSUREC')
-
-        
-
+          read(buf, *, iostat=ios) pressurec
+        case('DENSITYC')
+          read(buf, *, iostat=ios) densityc
       end select
 
     end if

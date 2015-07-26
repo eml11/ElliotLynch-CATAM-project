@@ -47,14 +47,13 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
     end function
     subroutine rk4step (usrf,xin,yout,dxin)
       double precision :: yout(:)
-      !double precision, dimension(lbound(yout,dim=1)) :: usrf
       double precision :: xin,dxin
       interface
         function usrf(xin,yout)
           double precision :: xin
           double precision :: yout(:)
           double precision, dimension(lbound(yout,dim=1)) :: usrf
-        end function
+      end function
       end interface
     end subroutine
   end interface
@@ -69,19 +68,32 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
   xinner = xar(1)
   xouter = xar(3)
 
-  dxinner = 1000.0
-  dxouter = -1000.0
+  dxinner = 1.0D27
+  dxouter = -1.0D27
+
+  print *, 'begin'
+
+  print *, yinner(1)
+  print *, youter(2)
+
+  print *, xouter
+  print *, youter
+  print *, dxouter
 
   do while (xinner.lt.xar(2) .or. xouter.gt.xar(2))
 
+    print *, 'inner'
     if (xinner.lt.xar(2)) then
       call rk4step (f,xinner,yinner,dxinner)
       write(unitinner,*) xinner, yinner
+      flush(unitinner)
     end if 
 
+    print *, 'outer'
     if (xouter.gt.xar(2)) then
       call rk4step (f,xouter,youter,dxouter)
-      write(unitouter,*) xinner, youter
+      write(unitouter,*) xouter, youter
+      flush(unitouter)
     end if
 
   end do

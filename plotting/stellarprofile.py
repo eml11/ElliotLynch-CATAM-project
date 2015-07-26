@@ -4,7 +4,7 @@ import pylab as pb
 inner = np.loadtxt('./stellarstructure_inner.txt',skiprows=2)
 outer = np.loadtxt('./stellarstructure_outer.txt',skiprows=2)[::-1]
 
-data = np.concatenate(inner,outer)
+data = np.concatenate((inner,outer),axis=1)
 
 gamma = 5./3.
 
@@ -12,18 +12,18 @@ mass_max = data[-1,0]
 radiusvar_max = data[-1,1]
 pressurevar_max = data[0,2]
 
-Temperature = np.exp(4*(1 - 1/gamma)*(data[:,2] - pressurevar_max))
+Temperature = (data[:,2]/pressurevar_max)**(1 - 1/gamma)
 
 print
 print 'Stellar Parameters'
 print
 print 'Surface'
-print 'Temperature: ', Temperature[-1]**(1./4.)
-print 'Radius: ', radiusvar_max[-1]**(1./3.)
+print 'Temperature: ', Temperature[-1]
+print 'Radius: ', radiusvar_max
 print
 print 'Core'
-print 'Temperature: ', Temperature[0]**(1./4.)
-print 'Pressure: ', np.exp(pressurevar_max)
+print 'Temperature: ', Temperature[0]
+print 'Pressure: ', pressurevar_max
 print
 print 'Error'
 print 'Pressure: ', np.abs((inner[-1,1] - outer[0,1])/inner[-1,1])

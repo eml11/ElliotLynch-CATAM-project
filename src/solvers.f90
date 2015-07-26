@@ -25,6 +25,10 @@ subroutine rk4step (f,x,y,dx)
   k3 = f(x + (dx/2.0),y + (dx/2.0)*k2)
   k4 = f(x + dx,y + dx*k3)
 
+  print *, y
+
+  print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+
   y = y + (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
   x = x + dx
 
@@ -68,33 +72,24 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
   xinner = xar(1)
   xouter = xar(3)
 
-  dxinner = 1.0D27
-  dxouter = -1.0D27
-
-  print *, 'begin'
-
-  print *, yinner(1)
-  print *, youter(2)
-
-  print *, xouter
-  print *, youter
-  print *, dxouter
+  dxinner = 0.001
+  dxouter = -0.001
 
   do while (xinner.lt.xar(2) .or. xouter.gt.xar(2))
 
-    print *, 'inner'
     if (xinner.lt.xar(2)) then
       call rk4step (f,xinner,yinner,dxinner)
       write(unitinner,*) xinner, yinner
       flush(unitinner)
     end if 
 
-    print *, 'outer'
     if (xouter.gt.xar(2)) then
       call rk4step (f,xouter,youter,dxouter)
       write(unitouter,*) xouter, youter
       flush(unitouter)
     end if
+
+   ! stop
 
   end do
 

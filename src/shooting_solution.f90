@@ -37,15 +37,10 @@ program stellarstructure
   xar(3) = masst
 
   yinner(1) = 0.0
-  youter(1) = radiusstar**3.
+  youter(1) = radiusstar
 
-  yinner(2) = DLOG(pressurec)
-  youter(2) = -10.0
-
-
-  print *, yinner
-  print *, youter
-
+  yinner(2) = pressurec
+  youter(2) = ((2.0*G)/(3*0.034))*(MSUN/(pressurec*RSUN**2))*(masst/(radiusstar**2)) !from eddington approx
 
   !unitinner header
   write(unitinner,*) "! inner stellar structure"
@@ -58,7 +53,7 @@ program stellarstructure
   write(unitouter,*) "mass radius^3 lnP"
   flush(unitouter)
 
-  !run solveri
+  !run solver
   call shootingmethod(question4rkfunc,xar,yinner,youter,unitinner,unitouter) 
 
   close(unitinner)
@@ -72,8 +67,11 @@ program stellarstructure
     double precision :: y(:)  !again possibly bad practice 
     double precision, dimension(lbound(y,dim=1)) :: question4rkfunc
 
-    question4rkfunc(1) = 12*PI*(y(1)**(4.0/3.0))*densityc*DEXP((y(2) - DLOG(pressurec))/ratiospecificheat)
-    question4rkfunc(2) = - ((G*x)/(4*PI))*(y(1)**(4.0/3.0))*DEXP(y(2))
+    !question4rkfunc(1) = (3.0/(4.0*PI))*((pressurec**(1/ratiospecificheat))/densityc)*DEXP(-y(2)/ratiospecificheat)
+    !question4rkfunc(2) = - (G/(4.0*PI))*x*(y(1)**(-4.0/3.0))*DEXP(-y(2))
+
+    question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*(1/densityc)*((y(2))**(-1/ratiospecificheat))
+    question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(pressurec*RSUN**4))
 
   end function
 

@@ -9,8 +9,13 @@ module mod_shared
   double precision :: densityc
 
   double precision, parameter :: G = 6.674D-11
-  double precision, parameter :: PI = 4*DATAN(1.D0) 
+  double precision, parameter :: PI = 4*DATAN(1.D0)
+  double precision, parameter :: STBOLTZ = 5.67D-8 
+  double precision, parameter :: RGAS = 8.3145D3
   double precision, parameter :: MSUN = 1.9891D30
   double precision, parameter :: RSUN = 6.9598D8
+  double precision, parameter :: LSUN = 3.8515D26
+  double precision, parameter :: PSUN = ((2*G)/(3*0.034))*(MSUN/(RSUN**2))
+  double precision, parameter :: DENSUN = (0.61538*PSUN/RGAS)*((LSUN/(4*PI*RSUN*RSUN*STBOLTZ))**(1.0/4.0))
 
 end module

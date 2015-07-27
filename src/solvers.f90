@@ -6,7 +6,7 @@ subroutine rk4step (f,x,y,dx)
     function f(xin,yout)
       double precision :: xin
       double precision :: yout(:)
-      double precision, dimension(lbound(yout,dim=1)) :: f    
+      double precision, dimension(size(yout)) :: f    
     end function
   end interface
   !double precision, external :: f(:)
@@ -22,12 +22,14 @@ subroutine rk4step (f,x,y,dx)
 
   k1 = f(x,y)
   k2 = f(x + (dx/2.0),y + (dx/2.0)*k1)
-  k3 = f(x + (dx/2.0),y + (dx/2.0)*k2)
+  k3 = f(x + (dx/2.0),y + (dx/2.0)*k2) !appears to be failing here despite the others being secable
   k4 = f(x + dx,y + dx*k3)
 
-  print *, y
 
-  print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+
+  !print *, y
+
+  !print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
 
   y = y + (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
   x = x + dx
@@ -47,7 +49,7 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
     function f(xin,yout)
       double precision :: xin
       double precision :: yout(:)
-      double precision, dimension(lbound(yout,dim=1)) :: f
+      double precision, dimension(size(yout)) :: f
     end function
     subroutine rk4step (usrf,xin,yout,dxin)
       double precision :: yout(:)
@@ -56,7 +58,7 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
         function usrf(xin,yout)
           double precision :: xin
           double precision :: yout(:)
-          double precision, dimension(lbound(yout,dim=1)) :: usrf
+          double precision, dimension(size(yout)) :: usrf
       end function
       end interface
     end subroutine
@@ -70,12 +72,12 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
   integer :: unitinner,unitouter
 
   xinner = xar(1)
-  xouter = xar(3)
+  xouter = -xar(3)
 
   dxinner = 0.001
-  dxouter = -0.001
+  dxouter = 0.001
 
-  do while (xinner.lt.xar(2) .or. xouter.gt.xar(2))
+  do while (xinner.lt.xar(2) .or. xouter.lt.-xar(2))
 
     if (xinner.lt.xar(2)) then
       call rk4step (f,xinner,yinner,dxinner)
@@ -83,14 +85,25 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
       flush(unitinner)
     end if 
 
-    if (xouter.gt.xar(2)) then
-      call rk4step (f,xouter,youter,dxouter)
-      write(unitouter,*) xouter, youter
+    if (xouter.lt.-xar(2)) then
+      call rk4step (fouter,xouter,youter,dxouter)
+      write(unitouter,*) -xouter, youter
       flush(unitouter)
     end if
 
-   ! stop
+    !stop
 
   end do
+
+  contains
+
+  function fouter(x,y)
+     double precision :: x
+     double precision :: y(:)
+     double precision, dimension(size(y)) :: fouter
+
+     fouter = -1.0*f(-x,y)
+
+  end function
 
 end subroutine

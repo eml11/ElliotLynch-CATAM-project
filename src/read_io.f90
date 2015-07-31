@@ -35,6 +35,8 @@ subroutine readinputfile (unitinput,fname)
           read(buf, *, iostat=ios) pressurec
         case('DENSITYC')
           read(buf, *, iostat=ios) densityc
+        case('TEMPC')
+          read(buf, *, iostat=ios) tempc
       end select
 
     end if

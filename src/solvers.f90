@@ -25,15 +25,17 @@ subroutine rk4step (f,x,y,dx)
   k3 = f(x + (dx/2.0),y + (dx/2.0)*k2) 
   k4 = f(x + dx,y + dx*k3)
 
-  !print *, k1
-
+  print *, k1
+  print *, k2
+  print *, k3
+  print *, k4
 
 
   !print *, y
 
-  !print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+  print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
 
-  y = y + (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
+  y = y + (dx/6.0)*(k1 + 2*k2 + 2*k3 + k4)
   x = x + dx
 
   deallocate(k1)
@@ -72,15 +74,15 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
 
   double precision :: dxinner, dxouter
 
-  double precision :: maxchange = 0.1
+  double precision :: maxchange = 1.0D-4
 
   integer :: unitinner,unitouter
 
   xinner = xar(1)
   xouter = -xar(3)
 
-  dxinner = 1.0D20
-  dxouter = 1.0D20
+  dxinner = 1.0D-10
+  dxouter = 1.0D-10
 
   do while (xinner.lt.xar(2) .or. xouter.lt.-xar(2))
 
@@ -92,9 +94,13 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
       write(unitinner,*) xinner, yinner
       flush(unitinner)
 ! this adaptive stepping need a heck of alot of work
-      dxinner = MINVAL(maxchange*DABS(pyinner/(1.0D-10 + (yinner - pyinner))))
+      !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
+      dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 
     end if 
+
+    print *,
+    print *,
 
     if (xouter.lt.-xar(2)) then
 
@@ -104,8 +110,9 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
       write(unitouter,*) -xouter, youter
       flush(unitouter)
 
-      dxouter = MINVAL(maxchange*DABS(pyouter/(1.0D-10 + (youter - pyouter))))
-      print *, dxouter
+      dxouter = MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter))))
+      !dxouter = maxchange*DABS(dxouter*pyouter(1)/((youter(1) - pyouter(1))))
+      !print *, dxouter
 
     end if
 
@@ -120,7 +127,7 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
      double precision :: y(:)
      double precision, dimension(size(y)) :: fouter
 
-     fouter = -1.0*f(-x,y)
+     fouter = -1.0*f(-1.0*x,y)
 
   end function
 

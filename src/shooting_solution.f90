@@ -27,6 +27,7 @@ program stellarstructure
   integer :: unitinput = 103
 
   double precision :: opacity = 0.034
+  double precision :: mmolecweight = 1.0/1.625
 
   call readinputfile (unitinput,'star.inp')
 
@@ -42,7 +43,7 @@ program stellarstructure
   youter(1) = radiusstar
 
   yinner(2) = pressurec
-  youter(2) = ((2.0*G)/(3*0.034))*(masst/(radiusstar**2)) !from eddington approx
+  youter(2) = ((2.0*G)/(3*0.034))*(masst/(radiusstar**2))*(MSUN/(RSUN**2.0)) !from eddington approx
 
   !unitinner header
   write(unitinner,*) "! inner stellar structure"
@@ -66,14 +67,15 @@ program stellarstructure
   function question4rkfunc (x,y)
 
     double precision :: x
-    double precision :: y(:)  !again possibly bad practice 
+    double precision :: y(:)  !again possibly bad practice
     double precision, dimension(size(y)) :: question4rkfunc
 
     !question4rkfunc(1) = (3.0/(4.0*PI))*((pressurec**(1/ratiospecificheat))/densityc)*DEXP(-y(2)/ratiospecificheat)
     !question4rkfunc(2) = - (G/(4.0*PI))*x*DEXP(-y(2))*(y(1)**(-4.0/3.0))
 
-    question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*(1/densityc)*((y(2)/pressurec)**(-1/ratiospecificheat))
-    question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))
+    question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*((RGAS*tempc)/(mmolecweight*pressurec)) * &
+   & (MSUN/(RSUN**3))*((y(2)/pressurec)**(-1/ratiospecificheat))
+    question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(RSUN**4))
 
   end function
 

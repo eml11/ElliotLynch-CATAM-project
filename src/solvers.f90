@@ -45,7 +45,7 @@ subroutine rk4step (f,x,y,dx)
 
 end subroutine 
 
-subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
+subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter)
  
   implicit none
  
@@ -55,6 +55,11 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
       double precision :: yout(:)
       double precision, dimension(size(yout)) :: f
     end function
+    function finnerboundary(xin,yout)
+      double precision :: xin
+      double precision :: yout(:)
+      double precision, dimension(size(yout)) :: finnerboundary
+    end function
     subroutine rk4step (usrf,xin,yout,dxin)
       double precision :: yout(:)
       double precision :: xin,dxin
@@ -63,7 +68,7 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
           double precision :: xin
           double precision :: yout(:)
           double precision, dimension(size(yout)) :: usrf
-      end function
+        end function
       end interface
     end subroutine
   end interface
@@ -78,15 +83,32 @@ subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
 
   integer :: unitinner,unitouter
 
+  integer :: start = 1
+
   xinner = xar(1)
   xouter = -xar(3)
 
   dxinner = 1.0D-10
   dxouter = 1.0D-10
 
+  write(unitinner,*) xinner, yinner
+  write(unitouter,*) -xouter, youter
+
   do while (xinner.lt.xar(2) .or. xouter.lt.-xar(2))
 
     if (xinner.lt.xar(2)) then
+
+      if (start.eq.1) then
+  
+        print *, 1
+        xinner = xinner + dxinner
+        print *, 2
+        yinner = finnerboundary (xinner,yinner)
+        print *, 3
+        write(unitinner,*) xinner, yinner
+        print *, 4
+        start = 0
+      end if
  
       pyinner = yinner
 

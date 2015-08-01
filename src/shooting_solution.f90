@@ -6,12 +6,17 @@ program stellarstructure
   implicit none
 
   interface
-    subroutine shootingmethod(f,xar,yinner,youter,unitinner,unitouter)
+    subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter)
       interface
         function f(xin,yout)
           double precision :: xin
           double precision :: yout(:)
           double precision, dimension(size(yout)) :: f
+        end function
+        function finnerboundary(xin,yout)
+          double precision :: xin
+          double precision :: yout(:)
+          double precision, dimension(size(yout)) :: finnerboundary
         end function
       end interface
       double precision :: yinner(:),youter(:)
@@ -43,7 +48,7 @@ program stellarstructure
   youter(1) = radiusstar
 
   yinner(2) = pressurec
-  youter(2) = ((2.0*G)/(3*0.034))*(masst/(radiusstar**2))*(MSUN/(RSUN**2.0)) !from eddington approx
+  youter(2) = ((2.0*G)/(3.0*0.034))*(masst/(radiusstar**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
 
   !unitinner header
   write(unitinner,*) "! inner stellar structure"
@@ -57,7 +62,7 @@ program stellarstructure
   flush(unitouter)
 
   !run solver
-  call shootingmethod(question4rkfunc,xar,yinner,youter,unitinner,unitouter) 
+  call shootingmethod(question4rkfunc,question4innerboundary,xar,yinner,youter,unitinner,unitouter) 
 
   close(unitinner)
   close(unitouter)
@@ -76,6 +81,17 @@ program stellarstructure
     question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*((RGAS*tempc)/(mmolecweight*pressurec)) * &
    & (MSUN/(RSUN**3))*((y(2)/pressurec)**(-1/ratiospecificheat))
     question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(RSUN**4))
+
+  end function
+
+  function question4innerboundary (x,y)
+
+    double precision :: x
+    double precision :: y(:)  !again possibly bad practice
+    double precision, dimension(size(y)) :: question4innerboundary
+
+    question4innerboundary(1) = ((3.0/(4.0*PI))*((RGAS*tempc)/(mmolecweight*pressurec))*x)**(1.0/3.0)
+    question4innerboundary(2 ) = pressurec - (2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec)/(RGAS*tempc))**2
 
   end function
 

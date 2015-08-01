@@ -4,7 +4,7 @@ import pylab as pb
 inner = np.loadtxt('./stellarstructure_inner.txt',skiprows=2)
 outer = np.loadtxt('./stellarstructure_outer.txt',skiprows=2)[::-1]
 
-data = np.concatenate((inner,outer),axis=1)
+data = np.concatenate((inner,outer),axis=0)
 
 gamma = 5./3.
 
@@ -31,9 +31,9 @@ print 'Radius: ',  np.abs((inner[-1,2] - outer[0,2])/inner[-1,2])
 
 
 
-pb.plot(data[:,0]/mass_max,data[:,1]/radiusvar_max,linewidth=2.0,label='Normalised r^3')
-pb.plot(data[:,0]/mass_max,data[:,2]/pressurevar_max,linewidth=2.0,label='Normalised lnP')
-pb.plot(data[:,0]/mass_max,linewidth=2.0,label='Normalised T^4')
+pb.plot(data[:,0]/mass_max,data[:,1]/radiusvar_max,linewidth=2.0,label='Normalised R')
+pb.plot(data[:,0]/mass_max,data[:,2]/pressurevar_max,linewidth=2.0,label='Normalised P')
+#pb.plot(data[:,0]/mass_max,linewidth=2.0,label='Normalised T^4')
 
 pb.xlabel('Normalised Mass')
 

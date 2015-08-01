@@ -32,7 +32,7 @@ program stellarstructure
   integer :: unitinput = 103
 
   double precision :: opacity = 0.034
-  double precision :: mmolecweight = 1.0/1.625
+  double precision :: mmolecweight
 
   call readinputfile (unitinput,'star.inp')
 
@@ -40,6 +40,9 @@ program stellarstructure
   open(unit=unitouter,FILE='stellarstructure_outer.txt')
 
   !set up problem
+
+  mmolecweight = 1/(2.0*hmassfrac + (3.0/4.0)*(1 - hmassfrac))
+
   xar(1) = 0
   xar(2) = massm
   xar(3) = masst
@@ -74,13 +77,18 @@ program stellarstructure
     double precision :: x
     double precision :: y(:)  !again possibly bad practice
     double precision, dimension(size(y)) :: question4rkfunc
+    double precision :: ppCNO_energypdc
 
     !question4rkfunc(1) = (3.0/(4.0*PI))*((pressurec**(1/ratiospecificheat))/densityc)*DEXP(-y(2)/ratiospecificheat)
     !question4rkfunc(2) = - (G/(4.0*PI))*x*DEXP(-y(2))*(y(1)**(-4.0/3.0))
+    
+    ppCNO_energypdc = (0.25*(hmassfrac**2)*DEXP(-33.8 - 33.8*(y(3)/1.0D6)**(-1.0/3.0)) + 8.8D18*DEXP(-152.2*(y(3)/1.0D6)**(-1.0/3.0)))*((y(3)/1.0D6)**(-2.0/3.0))
 
     question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*((RGAS*tempc)/(mmolecweight*pressurec)) * &
    & (MSUN/(RSUN**3))*((y(2)/pressurec)**(-1/ratiospecificheat))
     question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(RSUN**4))
+    question4rkfunc(3) = -(3*mmolecweight*y(4))/(((16*PI)**2)*STBOLTZ*(y(1)**4)*(y(3)**3))
+    question4rkfunc(4) = ppCNO_energypdc
 
   end function
 
@@ -91,7 +99,7 @@ program stellarstructure
     double precision, dimension(size(y)) :: question4innerboundary
 
     question4innerboundary(1) = ((3.0/(4.0*PI))*((RGAS*tempc)/(mmolecweight*pressurec))*x)**(1.0/3.0)
-    question4innerboundary(2 ) = pressurec - (2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec)/(RGAS*tempc))**2
+    question4innerboundary(2) = pressurec - (2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec)/(RGAS*tempc))**2
 
   end function
 

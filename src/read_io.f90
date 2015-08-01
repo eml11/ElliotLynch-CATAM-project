@@ -37,6 +37,8 @@ subroutine readinputfile (unitinput,fname)
           read(buf, *, iostat=ios) densityc
         case('TEMPC')
           read(buf, *, iostat=ios) tempc
+        case('HMASSF')
+          read(buf, *, iostat=ios) hmassfrac
       end select
 
     end if

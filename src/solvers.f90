@@ -45,7 +45,7 @@ subroutine rk4step (f,x,y,dx)
 
 end subroutine 
 
-subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter)
+subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag)
  
   implicit none
  
@@ -72,10 +72,13 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
       end interface
     end subroutine
   end interface
+  integer, optional :: stype_flag
+  integer :: stype_var = 0
   double precision :: yinner(:),youter(:)
   double precision :: pyinner(SIZE(yinner)), pyouter(SIZE(youter))
   double precision :: xar(3)
   double precision :: xinner, xouter
+  double precision :: xc
 
   double precision :: dxinner, dxouter
 
@@ -84,6 +87,10 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
   integer :: unitinner,unitouter
 
   integer :: start = 1
+
+  if (present(stype_flag)) then
+    stype_var = stype_flag
+  end if
 
   xinner = xar(1)
   xouter = -xar(3)
@@ -94,19 +101,23 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
   write(unitinner,*) xinner, yinner
   write(unitouter,*) -xouter, youter
 
-  do while (xinner.lt.xar(2) .or. xouter.lt.-xar(2))
+  if (stype_var.eq.0) then
+    xc = xar(2)
+  else if (stype_var.eq.1) then
+    xc = xar(1)
+  else if (stype_var.eq.2) then
+    xc = xar(3)
+  end if
 
-    if (xinner.lt.xar(2)) then
+  do while (xinner.lt.xc .or. xouter.lt.-xc)
 
-      if (start.eq.1) then
-  
-        print *, 1
+    if (xinner.lt.xc) then
+
+      if (start.eq.1 .and. (stype_var.eq.0 .or. stype_var.eq.1)) then
+ 
         xinner = xinner + dxinner
-        print *, 2
         yinner = finnerboundary (xinner,yinner)
-        print *, 3
         write(unitinner,*) xinner, yinner
-        print *, 4
         start = 0
       end if
  
@@ -124,7 +135,7 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
     print *,
     print *,
 
-    if (xouter.lt.-xar(2)) then
+    if (xouter.lt.-xc .and. (stype_var.eq.0 .or. stype_var.eq.2)) then
 
       pyouter = youter
 

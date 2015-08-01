@@ -23,6 +23,14 @@ subroutine readinputfile (unitinput,fname)
       buf = buf(pos+1:)
 
       select case (label)
+        case('SHOOTTYPE')
+          if (buf.eq.'IN') then
+            stype = 2
+          else if (buf.eq.'OUT') then
+            stype = 1
+          else if (buf.eq.'INOUT') then
+            stype = 0
+          end if 
         case ('RADIUSS')
           read(buf, *, iostat=ios) radiusstar
         case ('GAMMA')
@@ -39,6 +47,8 @@ subroutine readinputfile (unitinput,fname)
           read(buf, *, iostat=ios) tempc
         case('HMASSF')
           read(buf, *, iostat=ios) hmassfrac
+        case('LUM0')
+          read(buf, *, iostat=ios) luminosity0
       end select
 
     end if

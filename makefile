@@ -7,10 +7,10 @@ all: $(STAR)
 
 $(STAR): $(SRC)/solvers.o $(SRC)/shooting_solution.o $(SRC)/read_io.o
 	mkdir -p bin
-	cd $(SRC); $(CC) -I$(SRC) shooting_solution.o solvers.o read_io.o mod_shared.o -o $(STAR)
+	cd $(SRC); $(CC) -I$(SRC) shooting_solution.o mod_solvers.o read_io.o mod_shared.o -o $(STAR)
 
-$(SRC)/solvers.o: $(SRC)/solvers.f90
-	cd $(SRC); $(CC) -c solvers.f90
+$(SRC)/mod_solvers.o: $(SRC)/mod_solvers.f90
+	cd $(SRC); $(CC) -c mod_solvers.f90
 
 $(SRC)/shooting_solution.o: $(SRC)/shooting_solution.f90 $(SRC)/mod_shared.o
 	cd $(SRC); $(CC) -I$(SRC) -c shooting_solution.f90 mod_shared.o

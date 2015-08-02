@@ -24,13 +24,14 @@ subroutine readinputfile (unitinput,fname)
 
       select case (label)
         case('SHOOTTYPE')
-          if (buf.eq.'IN') then
-            stype = 2
-          else if (buf.eq.'OUT') then
-            stype = 1
-          else if (buf.eq.'INOUT') then
-            stype = 0
-          end if 
+          select case(ADJUSTL(buf))
+            case ('IN')
+              stype = 2
+            case ('OUT')
+              stype = 1
+            case ('INOUT')
+              stype = 0
+          end select 
         case ('RADIUSS')
           read(buf, *, iostat=ios) radiusstar
         case ('GAMMA')

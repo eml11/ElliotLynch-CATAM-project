@@ -104,9 +104,9 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
   if (stype_var.eq.0) then
     xc = xar(2)
   else if (stype_var.eq.1) then
-    xc = xar(1)
-  else if (stype_var.eq.2) then
     xc = xar(3)
+  else if (stype_var.eq.2) then
+    xc = xar(1)
   end if
 
   do while (xinner.lt.xc .or. xouter.lt.-xc)
@@ -125,8 +125,7 @@ subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter
 
       call rk4step (f,xinner,yinner,dxinner)
       write(unitinner,*) xinner, yinner
-      flush(unitinner)
-! this adaptive stepping need a heck of alot of work
+      flush(unitinner)! this adaptive stepping need a heck of alot of work
       !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
       dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 

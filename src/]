@@ -111,7 +111,6 @@ module mod_solvers
       end if
 
       print *, 'testdim ',G(i,:)
-      print *, G(i,i:)
 
       eorthoganal = (/(j, j=1,SIZE(G(:,1)))/)
       where (eorthoganal.eq.i)
@@ -122,9 +121,9 @@ module mod_solvers
 
       u = G(i,:)
       u(i:) = G(i,i:) - eorthoganal(i:)
+    
+      print *, 'u vector: ',u
   
-      print *, 'rho: ',u(i)
-
       P = 0.0
       forall (j = 1:SIZE(G(:,1))) P(j,j) = 1.0
 
@@ -141,22 +140,21 @@ module mod_solvers
        QT = MATMUL(QT,P)
 
       !print *, 'ident ', MATMUL(QT,TRANSPOSE(QT))
-      !print *, 'apply householder: ', MATMUL(G,P)
+      print *, 'apply householder: ', MATMUL(P,G)
 
-      !G(i,i:) = eorthoganal(i:)!this is wrong
-      G = MATMUL(G,P)
+      G(i,i:) = eorthoganal(i:)
+      !G = MATMUL(P,G) !slower should give same results
+      !doesn't therefore P is wrong
   
       print *, 'R ', G
     end do  
 
-    print *, 'umat: ',G
+    print *, 'umat: ',G !this appears to be correct by this point
 
     print *, 'QT ',QT!this is too small
 
-    !appears to be preforming rotations but by incorrect value
-
     print *,
-    print *, 'original G: ', MATMUL(G,TRANSPOSE(QT)) !returning original G
+    print *, 'original G: ', MATMUL(G,TRANSPOSE(QT)) !not returning original G, R(G) is correct
     print *,
 
     !print *, pivot
@@ -199,7 +197,7 @@ module mod_solvers
 
 
     !need to pivot back
-    G = MATMUL(QT,pivot)!this should be swapted?
+    G = MATMUL(pivot,QT)!this should be swapted?
     !do i=1,SIZE(G(:,1))
     !  if (pivot(i).eq.0) CYCLE
     !  bufar=G(:,i)
@@ -333,7 +331,7 @@ module mod_solvers
 
   end subroutine
 
-  subroutine jacobian_solver(f,finnerboundary,boundaryconditions,xar,yparam,unitinner,unitouter,stype_flag)
+  subroutine jacobian_solver(f,finnerboundary,xar,yparam,unitinner,unitouter,stype_flag)
 
     implicit none
 
@@ -348,21 +346,17 @@ module mod_solvers
         double precision :: yout(:)
         double precision, dimension(size(yout)) :: finnerboundary
       end function
-      subroutine boundaryconditions(xar,yinner,youter,yparam)
-        double precision xar(3)
-        double precision yinner(:),youter(:)
-        double precision yparam(:)
-      end subroutine
     end interface
 
     integer, optional :: stype_flag
     integer :: stype_var = 0
     double precision :: yparam(:)
     double precision :: yinner(SIZE(yparam)),youter(SIZE(yparam))
+    double precision :: pyinner(SIZE(yparam)), pyouter(SIZE(yparam))
     double precision :: xar(3)
-  
-    double precision :: yparamtmp(SIZE(yparam))
-    !double precision :: delta_er(SIZE(yparam))
+
+    double precision :: yinnervar(SIZE(yparam)),youtervar(SIZE(yparam))
+    double precision :: delta_er(SIZE(yparam))
 
     double precision :: dxinner, dxouter
 
@@ -380,35 +374,46 @@ module mod_solvers
       stype_var = stype_flag
     end if
 
-    call boundaryconditions(xar,yinner,youter,yparam)
+    do
+      yinner(1) = 0.0 !cannot do it this way
+      youter(1) = yparam(1)
 
-    do !note currently only supports INOUT
+      yinner(2) = yparam(2)
+      youter(2) = ((2.0*G)/(3.0*0.034))*(xar(3)/(yparam(1)**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+
+      yinner(3) = yparam(3)
+      youter(3) = ((yparam(4)/(4.0*PI*STBOLTZ*(yparam(1)**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0)
+
+      yinner(4) = 0.0
+      youter(4) = yparam(4)
 
       call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,0)
 
       er = (youter - yinner)/yinner
   
       !main solver run with correct initial conditions
-      if (MAXVAL(DABS(er)) .le. targeter) return
-        !call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,1)
-        !return
-      !end if
+      if (MAXVAL(DABS(er)) .le. targeter) then
+        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,1)
+        return
+      end if
 
       do i=1,SIZE(yparam)
-        yparamtmp = yparam
-        yparamtmp(i) = (1.0 + targeter)*yparam(i)
-        call boundaryconditions(xar,yinner,youter,yparamtmp)
-        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,0)
+        yinnervar = yinner
+        youtervar = youter
+        yinnervar(i) = (1 + targeter)*yinner(i)
+        youtervar(i) = (1 + targeter)*youter(i)
+        call shootingmethod(f,finnerboundary,xar,yinnervar,youtervar,unitinner,unitouter,stype_flag,0)
 
-        jacobian(i,:) = (youter - yinner)/yinner
+        jacobian(i,:) = (youtervar - yinnervar)/yinnervar
       
-        yparamtmp = yparam
-        yparamtmp(i) = (1.0 - targeter)*yparam(i)
-        call boundaryconditions(xar,yinner,youter,yparamtmp)
-        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,0)
+        yinnervar = yinner
+        youtervar = youter
+        yinnervar(i) = (1 - targeter)*yinner(i)
+        youtervar(i) = (1 - targeter)*youter(i)
+        call shootingmethod(f,finnerboundary,xar,yinnervar,youtervar,unitinner,unitouter,stype_flag,0)
 
-        jacobian(i,:) = jacobian(i,:) - (youter - yinner)/yinner
-        jacobian(i,:) = jacobian(i,:)/(2.0*targeter)!check the rows and columbs are the correct way round.
+        jacobian(i,:) = delta_er - (youtervar - yinnervar)/yinnervar
+        jacobian(i,:) = delta_er/(2.0*targeter)!check the rows and columbs are the correct way round.
 
       end do
       
@@ -435,14 +440,13 @@ program solvers_unit_tests
   double precision GMAT(3,3),GINV(3,3)
 
   GMAT = reshape((/1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,0.0/), shape(GMAT)) 
-  GINV = (1.0/9.0)*reshape((/-16.0,8.0,-1.0,14.0,-7.0,2.0,-1.0,2.0,-1.0/), shape(GMAT))
+  GINV = (-1.0/9.0)*reshape((/-16.0,8.0,-1.0,14.0,-7.0,2.0,-1.0,2.0,-1.0/), shape(GMAT))
 
   print *, 'Testting: householderinversion'
   print *,
   print *, 'G: ',GMAT 
   call householderinversion(GMAT)   
   print *, 'G^-1: ',GMAT
-  print *, 'ACTUAL: ', GINV
   print *, 'er: ',(GMAT - GINV)/GINV
   print *,
 

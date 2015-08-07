@@ -1,12 +1,13 @@
 
 program stellarstructure
 
-  use mod_shared,mod_solvers
+  use mod_shared
+  use mod_solvers
 
   implicit none
   
   double precision :: xar(3)
-  double precision :: yinner(4), youter(4)
+  double precision :: yinner(4), youter(4),  yparam(4)
   integer :: unitinner = 101,unitouter = 102
   integer :: unitinput = 103
 
@@ -24,17 +25,19 @@ program stellarstructure
   xar(2) = massm
   xar(3) = masst
 
-  yinner(1) = 0.0
-  youter(1) = radiusstar
+  !yinner(1) = 0.0
+  !youter(1) = radiusstar
 
-  yinner(2) = pressurec
-  youter(2) = ((2.0*G)/(3.0*0.034))*(masst/(radiusstar**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+  !yinner(2) = pressurec
+  !youter(2) = ((2.0*G)/(3.0*0.034))*(masst/(radiusstar**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
 
-  yinner(3) = tempc
-  youter(3) = ((luminosity0/(4.0*PI*STBOLTZ*(radiusstar**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0)
+  !yinner(3) = tempc
+  !youter(3) = ((luminosity0/(4.0*PI*STBOLTZ*(radiusstar**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0)
 
-  yinner(4) = 0.0
-  youter(4) = luminosity0
+  !yinner(4) = 0.0
+  !youter(4) = luminosity0
+
+  yparam = (/radiusstar,pressurec,tempc,luminosity0/)
 
   if (stype.eq.0 .or. stype.eq.1) then
     !unitinner header
@@ -54,13 +57,40 @@ program stellarstructure
     flush(unitouter)
   end if
 
-  !run solver
-  call jacobian_solver(question5rkfunc,question5innerboundary,xar,yinner,youter,unitinner,unitouter,stype) 
+  !run jacobian solver to find paramters
+  call jacobian_solver(question5rkfunc,question5innerboundary,question5boundcond,xar,yparam,unitinner,unitouter,stype) 
+ 
+  ! write to file using shooting solver with correct parameters 
+  call boundaryconditions(xar,yinner,youter,yparam)
+  call shootingmethod(question5rkfunc,question5innerboundary,xar,yinner,youter,unitinner,unitouter,stype,1)
 
   close(unitinner)
   close(unitouter)
 
   contains
+
+  subroutine question5boundcond(xar,yinner,youter,yparam)
+
+    double precision :: xar(3)
+    double precision :: yinner(:),youter(:)
+    double precision :: yparam(:)
+    double precision :: masst
+
+    masst = xar(3)
+
+    yinner(1) = 0.0
+    youter(1) = yparam(1)
+
+    yinner(2) = yparam(2)
+    youter(2) = ((2.0*G)/(3.0*0.034))*(masst/(yparam(1)**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+
+    yinner(3) = yparam(3)
+    youter(3) = ((yparam(4)/(4.0*PI*STBOLTZ*(yparam(1)**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0)
+
+    yinner(4) = 0.0
+    youter(4) = yparam(4)
+
+  end subroutine
 
   function question5rkfunc (x,y)
 

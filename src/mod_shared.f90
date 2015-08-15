@@ -21,5 +21,7 @@ module mod_shared
   double precision, parameter :: LSUN = 3.8515D26
   double precision, parameter :: PSUN = ((2*G)/(3*0.034))*(MSUN/(RSUN**2))
   double precision, parameter :: DENSUN = (0.61538*PSUN/RGAS)*((LSUN/(4*PI*RSUN*RSUN*STBOLTZ))**(1.0/4.0))
+  double precision, parameter :: Gbar = 1.0D14
+  double precision, parameter :: MKELVIN = 1.0D6
 
 end module

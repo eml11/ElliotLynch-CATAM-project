@@ -57,6 +57,102 @@ module mod_solvers
 
   end subroutine 
 
+
+  !possibly computing L matrix - owing to dimension flip
+  function householderdeterminant(G)
+
+    double precision :: G(:,:)
+    double precision :: P(SIZE(G(:,1)),SIZE(G(1,:)))
+    double precision :: u(SIZE(G(1,:))),eorthoganal(SIZE(G(1,:)))
+    double precision :: QT(SIZE(G(:,1)),SIZE(G(1,:)))
+    double precision :: bufar(SIZE(G(:,1)))
+    double precision :: pivot(SIZE(G(:,1)),SIZE(G(:,1)))
+    double precision :: UMAT(SIZE(G(:,1)),SIZE(G(1,:)))
+
+    double precision :: householderdeterminant    
+
+    integer i,j
+
+
+
+    !pivot G
+    !very simple to get to work
+
+    pivot = 0
+    !QT = 0
+    !forall (j = 1:SIZE(G(:,1))) QT(j,j) = 1.0
+    forall (j = 1:SIZE(G(:,1))) pivot(j,j) = 1.0
+
+    !alot of muddling of dimensions
+    !also requires square - actual 
+    !householder does not
+
+    UMAT = G
+    householderdeterminant = 1.0
+    
+
+    do i=1,SIZE(G(:,1))
+
+      !preform simple pivot
+      if (i.ge.SIZE(G(:,1))-1) then
+        if (UMAT(SIZE(G(:,1)),SIZE(G(:,1))).eq.0 .or. UMAT(SIZE(G(:,1))-1,SIZE(G(:,1))-1).eq.0) then
+          j = SIZE(G(:,1)) - 1
+
+          bufar=UMAT(:,SIZE(G(:,1)))
+          UMAT(:,SIZE(G(:,1)))=UMAT(:,j)
+          UMAT(:,j)=bufar
+
+          bufar=pivot(:,SIZE(pivot(:,1)))
+          pivot(:,SIZE(pivot(:,1)))=pivot(:,j)
+          pivot(:,j)=bufar
+        end if
+      else
+        if (UMAT(i,i).eq.0) then
+          j=0
+          do
+            j=j+1
+            if (UMAT(j,i).ne.0) exit !should add error for not being possible to find pivot
+          end do
+
+          bufar=UMAT(:,i)
+          UMAT(:,i)=UMAT(:,i+j)
+          UMAT(:,i+j)=bufar
+
+          bufar=pivot(:,i)
+          pivot(:,i)=pivot(:,i+j)
+          pivot(:,i+j)=bufar
+        end if
+      end if
+
+
+      eorthoganal = (/(j, j=1,SIZE(G(:,1)))/)
+      where (eorthoganal.eq.i)
+        eorthoganal=-1.0*SIGN(1.0D0,UMAT(i,i))*NORM2(UMAT(i,i:))
+      elsewhere
+        eorthoganal=0.0
+      end where
+
+      u = UMAT(i,:)
+      u(i:) = UMAT(i,i:) - eorthoganal(i:)
+
+      P = 0.0
+      forall (j = 1:SIZE(G(:,1))) P(j,j) = 1.0
+
+      P(i:,i:) = P(i:,i:) - 2.0*(spread(u(i:),1,SIZE(G(:,1)) + 1 - i)*spread(u(i:),2,SIZE(G(1,:)) + 1 - i)) &
+     &/(DOT_PRODUCT(u(i:),u(i:)))
+
+      !G(i,i:) = eorthoganal(i:)!this is wrong
+      UMAT = MATMUL(UMAT,P)
+
+      print *, 'G householder',UMAT
+
+      householderdeterminant = householderdeterminant*eorthoganal(i)
+    end do
+
+  end function
+ 
+
+  !possibly computing L matrix - owing to dimension flip
   subroutine householderinversion (G)
 
     double precision :: G(:,:)
@@ -135,17 +231,9 @@ module mod_solvers
       P(i:,i:) = P(i:,i:) - 2.0*(spread(u(i:),1,SIZE(G(:,1)) + 1 - i)*spread(u(i:),2,SIZE(G(1,:)) + 1 - i)) &
      &/(DOT_PRODUCT(u(i:),u(i:)))
 
-      !print *, 'P: ',P
-      !print *, 'QT',QT
-
-      !P is correct
-
       !QT(i:,i:) = MATMUL(P(i:,i:),QT(i:,i:)) !this is most likely currently wrong
       !QT = MATMUL(P,QT)
        QT = MATMUL(QT,P)
-
-      !print *, 'ident ', MATMUL(QT,TRANSPOSE(QT))
-      !print *, 'apply householder: ', MATMUL(G,P)
 
       !G(i,i:) = eorthoganal(i:)!this is wrong
       G = MATMUL(G,P)
@@ -413,6 +501,8 @@ module mod_solvers
     double precision :: er(SIZE(yparam))
     double precision :: dyparam(SIZE(yparam))
     double precision :: targeter = 1.0D-5
+    
+    double precision :: determinant
 
     integer :: i
 
@@ -425,16 +515,18 @@ module mod_solvers
 
     do !note currently only supports INOUT
 
-      print *, "setting boundary conditions"
+      !print *, "setting boundary conditions"
       call boundaryconditions(xar,yinner,youter,yparam)
 
       
-      print *, 'xar=',xar, " yinner=", yinner, " youter=", youter, " yparam=", yparam
+      !print *, 'xar=',xar, " yinner=", yinner, " youter=", youter, " yparam=", yparam
 
-      print *, 'calling shooting method'
+      !print *, 'calling shooting methoid'
       call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
       
-      print *, "yinner=", yinner, " youter=", youter
+    !  stop
+
+      !print *, "yinner=", yinner, " youter=", youter
 
      ! stop
 
@@ -450,7 +542,8 @@ module mod_solvers
       !print *, yinner
       !print *, '-'
 
-      er = yinner - youter
+      er = yinner - youter !!!!temp look
+      !er= youter - yinner !!!!temp look
       print *, 'error =', er
       
 
@@ -480,55 +573,68 @@ module mod_solvers
 
       !stop
 
-      call sleep(10)
+      !call sleep(sleepval)
       !need to rescale variables so they are all the same magnitude, somehow.
       jacobian = 0.0
-      print *, 'do'
+      !print *, 'do'
       do i=1,SIZE(yparam)
-        print *, 'parameter ',i
+       ! print *, 'parameter ',i
 
         yparamtmp = yparam
-        yparamtmp(i) = yparam(i) + targeter
+        yparamtmp(i) = 1.5*yparam(i)!targeter
  
-        print *, 'f delta yparam', yparamtmp
-        print *, 'calling boundaryconditions'
+        !print *, 'f delta yparam', yparamtmp
+        !print *, 'calling boundaryconditions'
         call boundaryconditions(xar,yinner,youter,yparamtmp)
-        print *, 'yinner=',yinner,' youter=',youter
-        print *, 'calling shootingmethod'
+        !print *, 'yinner=',yinner,' youter=',youter
+        !print *, 'calling shootingmethod'
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-        print *, 'yinner=',yinner,' youter=',youter      
+        !print *, 'yinner=',yinner,' youter=',youter      
 
         !print *,
         !print *, youter
 
-        jacobian(:,i) = -(- yinner + youter)      
-        print *, 'jacobian 1',jacobian
+        jacobian(:,i) = (yinner - youter)/youter 
+        !print *, 'jacobian 1',jacobian
         !jacobian(i,i) = - yinner(i) + youter(i)!/yinner
 
         yparamtmp = yparam
-        yparamtmp(i) = yparam(i) - targeter
-        print *, 'b delta yparam', yparamtmp
-        print *, 'calling boundaryconditions'
+        yparamtmp(i) = 0.5*yparam(i) !- targeter
+        !print *, 'b delta yparam', yparamtmp
+        !print *, 'calling boundaryconditions'
         call boundaryconditions(xar,yinner,youter,yparamtmp)
-        print *, 'yinner=',yinner,' youter=',youter
-        print *, 'calling shootingmethod'
+        !print *, 'yinner=',yinner,' youter=',youter
+        !print *, 'calling shootingmethod'
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-        print *, 'yinner=',yinner,' youter=',youter
+        !print *, 'yinner=',yinner,' youter=',youter
 
         !print *, youter
         !print *,
 
-        jacobian(:,i) = jacobian(:,i) - (yinner - youter)
-        print *, 'jacobian 2',jacobian
-        jacobian(:,i) = jacobian(:,i)/(2.0*targeter)!check the rows and columbs are the correct way round.
-        print *, 'jacobian 3',jacobian
+        jacobian(:,i) = jacobian(:,i) - (yinner - youter)/youter
+        !print *, 'jacobian 2',jacobian
+        jacobian(:,i) = jacobian(:,i)/(yparam(i))!/(2.0*targeter)!check the rows and columbs are the correct way round.
+        !print *, 'jacobian 3',jacobian
+
+!        if (i.eq.4) stop
 
         !jacobian(i,i) = jacobian(i,i) + yinner(i) - youter(i)!/yinner
         !jacobian(i,i) = jacobian(i,i)/(2.0*targeter)
 
         !jacobian(i,:) = jacobian(i,:)
-        call sleep(10)
+        !call sleep(sleepval)
       end do
+
+      determinant = DABS(householderdeterminant(jacobian))
+
+      !determinant = 1.0D-7
+
+      !print *, 'determinant ',determinant
+
+      !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
+
+      jacobian = jacobian/determinant
+
  
       !issue with luminosity
 
@@ -537,17 +643,17 @@ module mod_solvers
       !have to regulerise first
       !forall (i = 1:SIZE(yparam)) jacobian(i,i) = jacobian(i,i) + targeter
 
-      print *, 'jacobian', jacobian
+      !print *, 'jacobian', jacobian
 
-      print *,
+      !print *,
       !do i=1,SIZE(yparam)
       !  print *, DABS(jacobian(i,:))
       !end do
-      print *,
+      !print *,
 
       !forall (i = 1:SIZE(yparam)) rescale(i,i) = 1.0D0/DABS(yparam(i) + targeter)
  
-      forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
+      !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
 
       if (ANY(jacobian .ne. jacobian)) then
          print *, '1/mx jacobian: ', jacobian
@@ -561,13 +667,13 @@ module mod_solvers
       !jacobian = jacobian*1.0D6
 
       !print *, 'rescale', rescale
-      print *, 'jacobian', jacobian
+      !print *, 'jacobian', jacobian
 
       if (ANY(jacobian .ne. jacobian)) then
          print *, 'rescale jacobian: ', jacobian
          stop
       end if
-
+      !stop
 
       !print *, 'jacobiani: ', jacobian
     
@@ -582,7 +688,7 @@ module mod_solvers
 
       regulerised_jacobian = jacobian
 
-      print *, 'calling householderinversion'
+      !print *, 'calling householderinversion'
       call householderinversion(jacobian)
 
       if (ANY(jacobian .ne. jacobian)) then
@@ -594,9 +700,9 @@ module mod_solvers
       
       !jacobian = MATMUL(jacobian,rescale)
 
-      print *, 'ident ;', MATMUL(jacobian,regulerised_jacobian)
+      !print *, 'ident ;', MATMUL(jacobian,regulerised_jacobian)
 
-      print *, 'arcjacobian: ', jacobian
+      !print *, 'arcjacobian: ', jacobian
 
       print *, 'yparam: ', yparam
       print *, er
@@ -606,11 +712,11 @@ module mod_solvers
       dyparam = -1.0*MATMUL(jacobian,er)
 
       print *, 'dyparam: ', dyparam
-      yparam = yparam + dyparam
+      yparam = yparam + dyparam 
 
-      !stop
+     ! stop
 
-      call sleep(10)
+      !call sleep(sleepval)
 
     end do
 

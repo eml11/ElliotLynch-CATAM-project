@@ -82,7 +82,7 @@ program stellarstructure
     youter(1) = yparam(1)
 
     yinner(2) = yparam(2)
-    youter(2) = (1.0/Gbar)*((2.0*G)/(3.0*0.034))*(masst/(yparam(1)**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+    youter(2) = (1.0/Gbar)*((2.0*G)/(3.0*opacity))*(masst/(yparam(1)**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
 
     yinner(3) = yparam(3)
     youter(3) = (1.0/MKELVIN)*(((yparam(4)/(4.0*PI*STBOLTZ*(yparam(1)**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0))

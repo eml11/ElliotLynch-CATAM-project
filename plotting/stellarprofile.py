@@ -1,12 +1,12 @@
 import numpy as np
 import pylab as pb
 
-#inner = np.loadtxt('./stellarstructure_inner.txt',skiprows=2)
+inner = np.loadtxt('./stellarstructure_inner.txt',skiprows=2)
 outer = np.loadtxt('./stellarstructure_outer.txt',skiprows=2)[::-1]
 
-#data = np.concatenate((inner,outer),axis=0)
+data = np.concatenate((inner,outer),axis=0)
 
-data = outer
+#data = outer
 
 gamma = 5./3.
 

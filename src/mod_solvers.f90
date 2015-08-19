@@ -322,8 +322,8 @@ module mod_solvers
       end function
     end interface 
     integer, optional :: stype_flag,write_flag
-    integer :: stype_var = 0
-    integer :: write_var = 1
+    integer :: stype_var
+    integer :: write_var
     double precision :: yinner(:),youter(:)
     double precision :: pyinner(SIZE(yinner)), pyouter(SIZE(youter))
     double precision :: xar(3)
@@ -332,7 +332,7 @@ module mod_solvers
 
     double precision :: dxinner, dxouter
 
-    double precision :: maxchange = 1.0D-4
+    double precision :: maxchange
 
     integer :: unitinner,unitouter
 
@@ -340,10 +340,12 @@ module mod_solvers
 
     integer :: iteration !test code
 
-
     start = 1
-    iteration = 1 !test code
- 
+    !iteration = 1 !test code
+    maxchange = 1.0D-4
+    stype_var = 0
+    write_var = 1 
+
 
     if (present(stype_flag)) then !is this nesicary?
       stype_var = stype_flag
@@ -382,14 +384,20 @@ module mod_solvers
 
         !this is most likely unstable
 
+        !note not general
         if (start.eq.1) then
  
+          !pyinner = yinner
+          !print *, yinner
           xinner = xinner + dxinner
           yinner = finnerboundary (xinner,yinner)
+          !print *, yinner
           if (write_var.eq.1) then
             write(unitinner,*) xinner, yinner
           end if 
-   
+
+          !dxinner = MAX(MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner)))),1.0D-10)!hacky way of doing this
+          !print *, dxinner
           !random test fix
           !if (yinner(1) .ge. 0.1) then
           start = 0
@@ -413,6 +421,14 @@ module mod_solvers
         !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
         dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 
+        !print *, DABS((dxinner*pyinner)/((yinner - pyinner)))
+        !print *, dxinner
+
+        if (ANY(yinner .ne. yinner)) then
+          print *, 'convergence fail ', yinner
+          stop
+        end if
+
       end if 
 
      ! stop
@@ -434,15 +450,12 @@ module mod_solvers
 
       end if
 
-      iteration = iteration + 1 !test code
+      !iteration = iteration + 1 !test code
       !print *,
 
       !call sleep(5)
 
     end do
-
-    !print *, '\n\n\n#######################\n\n\n#################\n\n\n'
-
 
     contains
 
@@ -498,10 +511,14 @@ module mod_solvers
     double precision :: regulerised_jacobian(SIZE(yparam),SIZE(yparam))
     integer :: r_j_num
 
-    double precision :: er(SIZE(yparam))
+    double precision :: er(SIZE(yparam)),forward_er(SIZE(yparam)),backward_er(SIZE(yparam))
     double precision :: dyparam(SIZE(yparam))
     double precision :: targeter = 1.0D-5
     
+    !double precision :: objective
+    double precision :: update_step
+    double precision :: tradeoff
+
     double precision :: determinant
 
     integer :: i
@@ -511,6 +528,8 @@ module mod_solvers
       print *, "stype_flag is set"
     end if
 
+    tradeoff = 0.1
+
     !call boundaryconditions(xar,yinner,youter,yparam)
 
     do !note currently only supports INOUT
@@ -518,147 +537,90 @@ module mod_solvers
       !print *, "setting boundary conditions"
       call boundaryconditions(xar,yinner,youter,yparam)
 
-      
+      print *, 'boudary condition ',yinner,youter     
+ 
       !print *, 'xar=',xar, " yinner=", yinner, " youter=", youter, " yparam=", yparam
 
       !print *, 'calling shooting methoid'
       call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-      
-    !  stop
+     
+      print *, 'yinner youter',yinner,youter 
 
-      !print *, "yinner=", yinner, " youter=", youter
+      if (ANY(yinner .ne. yinner)) then
+        call boundaryconditions(xar,yinner,youter,yparam)
+        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,1)
+        print *, 'nan in yinner ', yinner
+        stop
+      end if
 
-     ! stop
+ 
+      er = (yinner - youter)/yparam
 
-      !potentially changing one of the read in parameters?
-      !print *, xar
-      !print *, yinner
-      !print *, '-'
-      
-      !call boundaryconditions(xar,yinner,youter,yparam)
-      !call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)!this seems to break something for no sensible reason
-      !potentially changing one of the read in parameters?
-      !print *, xar
-      !print *, yinner
-      !print *, '-'
+      if (ALL(DABS(er) .le. targeter)) return
 
-      er = yinner - youter !!!!temp look
-      !er= youter - yinner !!!!temp look
-      print *, 'error =', er
-      
 
-      !main solver run with correct initial conditions
-      if (ALL(DABS(er) .le. targeter*yinner)) return
-        !call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,1)
-        !return
-      !end if
+!      objective = er**2.0 + 0.01*yparam**2
 
-      !rescale=0.0
+      !conjugate gradient method:
 
-      !yparamtmp = yparam
-      !yparamtmp(2) = 1.0*yparam(2) + targeter
-      !call boundaryconditions(xar,yinner,youter,yparamtmp)
-      !call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
+    
 
-      !er = - yinner + youter
+      do i=1,SIZE(yparam)
 
-      !yparamtmp = yparam
-      !yparamtmp(2) = 1.0*yparam(2) - targeter
-      !call boundaryconditions(xar,yinner,youter,yparamtmp)
-      !call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
+        yparamtmp = yparam
+        yparamtmp(i) = yparam(i) + targeter
 
-      !er = er + yinner - youter
+        call boundaryconditions(xar,yinner,youter,yparamtmp)
+        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
 
-      !print *, er/targeter
+        forward_er = ((yinner - youter)/yparam)
+
+         !might change method at some point
+        yparamtmp = yparam
+        yparamtmp(i) = yparam(i) - targeter 
+
+        call boundaryconditions(xar,yinner,youter,yparamtmp)
+        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
+
+        backward_er = ((yinner - youter)/yparam)
+        
+        jacobian(:,i) = (forward_er - backward_er)/(2.0*targeter)
+
+       ! print *, jacobian
+ 
+      end do 
+
+
+      !other convergence method
+      !dyparam = er
+
+      !er should actually be dyparam
+      !update_step = (DOT_PRODUCT(yparam,MATMUL(jacobian,er)) + DOT_PRODUCT(er,er) + &
+     !& 2*tradeoff*DOT_PRODUCT(yparam,er)) / &
+     !& (DOT_PRODUCT(er,MATMUL(jacobian,er)) + 2.0*tradeoff*DOT_PRODUCT(er,er))  
+
+      !print *, 'update step ',update_step
+
+      !yparam = DABS(yparam + update_step*dyparam) !hacky attempt at a fix
+      !print *, 'yparam ',yparam
 
       !stop
+      print *,
+      print *, 'er= ',er
+      print *,
 
-      !call sleep(sleepval)
-      !need to rescale variables so they are all the same magnitude, somehow.
-      jacobian = 0.0
-      !print *, 'do'
-      do i=1,SIZE(yparam)
-       ! print *, 'parameter ',i
+      !print *, jacobian
 
-        yparamtmp = yparam
-        yparamtmp(i) = 1.5*yparam(i)!targeter
- 
-        !print *, 'f delta yparam', yparamtmp
-        !print *, 'calling boundaryconditions'
-        call boundaryconditions(xar,yinner,youter,yparamtmp)
-        !print *, 'yinner=',yinner,' youter=',youter
-        !print *, 'calling shootingmethod'
-        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-        !print *, 'yinner=',yinner,' youter=',youter      
-
-        !print *,
-        !print *, youter
-
-        jacobian(:,i) = (yinner - youter)/youter 
-        !print *, 'jacobian 1',jacobian
-        !jacobian(i,i) = - yinner(i) + youter(i)!/yinner
-
-        yparamtmp = yparam
-        yparamtmp(i) = 0.5*yparam(i) !- targeter
-        !print *, 'b delta yparam', yparamtmp
-        !print *, 'calling boundaryconditions'
-        call boundaryconditions(xar,yinner,youter,yparamtmp)
-        !print *, 'yinner=',yinner,' youter=',youter
-        !print *, 'calling shootingmethod'
-        call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-        !print *, 'yinner=',yinner,' youter=',youter
-
-        !print *, youter
-        !print *,
-
-        jacobian(:,i) = jacobian(:,i) - (yinner - youter)/youter
-        !print *, 'jacobian 2',jacobian
-        jacobian(:,i) = jacobian(:,i)/(yparam(i))!/(2.0*targeter)!check the rows and columbs are the correct way round.
-        !print *, 'jacobian 3',jacobian
-
-!        if (i.eq.4) stop
-
-        !jacobian(i,i) = jacobian(i,i) + yinner(i) - youter(i)!/yinner
-        !jacobian(i,i) = jacobian(i,i)/(2.0*targeter)
-
-        !jacobian(i,:) = jacobian(i,:)
-        !call sleep(sleepval)
-      end do
 
       determinant = DABS(householderdeterminant(jacobian))
 
       !determinant = 1.0D-7
 
-      !print *, 'determinant ',determinant
+      print *, 'determinant ',determinant
 
       !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
 
-      jacobian = jacobian/determinant
-
- 
-      !issue with luminosity
-
-      !print *, 'lum ', jacobian(:,4)
-
-      !have to regulerise first
-      !forall (i = 1:SIZE(yparam)) jacobian(i,i) = jacobian(i,i) + targeter
-
-      !print *, 'jacobian', jacobian
-
-      !print *,
-      !do i=1,SIZE(yparam)
-      !  print *, DABS(jacobian(i,:))
-      !end do
-      !print *,
-
-      !forall (i = 1:SIZE(yparam)) rescale(i,i) = 1.0D0/DABS(yparam(i) + targeter)
- 
-      !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
-
-      if (ANY(jacobian .ne. jacobian)) then
-         print *, '1/mx jacobian: ', jacobian
-         stop
-      end if
+      jacobian = jacobian/determinant !this realy shouldn't be the case
 
       !basic regulerisation sceme:
 
@@ -669,10 +631,10 @@ module mod_solvers
       !print *, 'rescale', rescale
       !print *, 'jacobian', jacobian
 
-      if (ANY(jacobian .ne. jacobian)) then
-         print *, 'rescale jacobian: ', jacobian
-         stop
-      end if
+      !if (ANY(jacobian .ne. jacobian)) then
+      !   print *, 'rescale jacobian: ', jacobian
+      !   stop
+      !end if
       !stop
 
       !print *, 'jacobiani: ', jacobian
@@ -686,15 +648,15 @@ module mod_solvers
 
       !forall (i = 1:SIZE(yparam)) jacobian(i,i) = jacobian(i,i) + 0.01
 
-      regulerised_jacobian = jacobian
+      !regulerised_jacobian = jacobian
 
       !print *, 'calling householderinversion'
       call householderinversion(jacobian)
 
-      if (ANY(jacobian .ne. jacobian)) then
-         print *, 'arcjacobian: ', jacobian
-         stop
-      end if
+      !if (ANY(jacobian .ne. jacobian)) then
+      !   print *, 'arcjacobian: ', jacobian
+      !   stop
+      !end if
 
       !rint *, 'arcjacobian: ', jacobian
       
@@ -704,19 +666,19 @@ module mod_solvers
 
       !print *, 'arcjacobian: ', jacobian
 
-      print *, 'yparam: ', yparam
-      print *, er
+      !print *, 'yparam: ', yparam
+      !print *, er
     
       !er = MATMUL(er,TRANSPOSE(jacobian))
 
       dyparam = -1.0*MATMUL(jacobian,er)
 
       print *, 'dyparam: ', dyparam
-      yparam = yparam + dyparam 
+      yparam = DABS(yparam + dyparam) 
 
      ! stop
 
-      !call sleep(sleepval)
+      !call sleep(5)
 
     end do
 

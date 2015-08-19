@@ -167,9 +167,14 @@ program stellarstructure
 
     ! note luminoasity0 is probably not defined
 
+    !hacky way of ensuring r is sufficiently large
+    question5innerboundary(1) = 1.0D-4
+
+    x = ((4.0*PI/3.0)*density*question5innerboundary(1)**3)
 
 
-    question5innerboundary(1) = ((3.0/(4.0*PI))*((RGAS*tempc*MKELVIN)/(mmolecweight*pressurec*Gbar))*x)**(1.0/3.0)
+
+    !question5innerboundary(1) = ((3.0/(4.0*PI))*((RGAS*tempc*MKELVIN)/(mmolecweight*pressurec*Gbar))*x)**(1.0/3.0)
     question5innerboundary(2) = pressurec - (1.0/Gbar)*(2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec*Gbar)/(RGAS*tempc*MKELVIN))**2
    ! question5innerboundary(3) = tempc + (((4.0*PI/3.0)*((mmolecweight*pressurec*Gbar)/((RGAS*tempc*MKELVIN))))**(1.0/3.0)) * &
    !& ((((12.0*opacity)/(STBOLTZ*(16*PI)**2)) * &

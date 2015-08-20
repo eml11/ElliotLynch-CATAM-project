@@ -1,31 +1,10 @@
 
-program stellarstructure
+program shootingsolution
 
   use mod_shared
+  use mod_solvers
 
   implicit none
-
-  interface
-    subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var)
-      interface
-        function f(xin,yout)
-          double precision :: xin
-          double precision :: yout(:)
-          double precision, dimension(size(yout)) :: f
-        end function
-        function finnerboundary(xin,yout)
-          double precision :: xin
-          double precision :: yout(:)
-          double precision, dimension(size(yout)) :: finnerboundary
-        end function
-      end interface
-      integer, optional :: stype_var
-      double precision :: yinner(:),youter(:)
-      double precision :: xar(3)
-      double precision :: dxinner, dxouter
-      integer :: unitinner,unitouter
-    end subroutine
-  end interface
 
   double precision :: xar(3)
   double precision :: yinner(4), youter(4)

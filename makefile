@@ -1,4 +1,13 @@
-CC=gfortran
+#code to deal with the yosemette compile issue
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+  CC=gfortran
+endif
+ifeq ($(UNAME_S),Darwin)
+  CC=gfortran-mp-4.8
+endif
+
 CFLAGS=-cpp
 BASE=$(PWD)
 BIN=$(BASE)/bin
@@ -24,7 +33,7 @@ $(SRC)/read_io.o: $(SRC)/read_io.f90 $(SRC)/mod_shared.o
 $(SRC)/mod_shared.o: $(SRC)/mod_shared.f90 
 	cd $(SRC); $(CC) $(CFLAGS) -c mod_shared.f90
 
-#split this up into seperate unittest when necisary
+#split this up into seperate unittests when necisary
 test: $(SRC)/mod_solvers.f90
 	cd $(SRC); $(CC) $(CFLAGS) -fbounds-check -Dunittest mod_solvers.f90 -o $(SOLVERSTEST)
 	$(SOLVERSTEST)

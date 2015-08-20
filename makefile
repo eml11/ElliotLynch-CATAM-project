@@ -1,13 +1,6 @@
 #code to deal with the yosemette compile issue
 
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-  CC=gfortran
-endif
-ifeq ($(UNAME_S),Darwin)
-  CC=gfortran-mp-4.8
-endif
-
+CC=gfortran
 CFLAGS=-cpp
 BASE=$(PWD)
 BIN=$(BASE)/bin

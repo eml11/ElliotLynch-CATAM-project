@@ -19,6 +19,10 @@ program adiabatic_solver
   open(unit=unitinner,FILE='stellarstructure_inner.txt')
   open(unit=unitouter,FILE='stellarstructure_outer.txt')
 
+  !composition dependent parameters
+  mmolecweight = 1/(2.0*hmassfrac + (3.0/4.0)*(1 - hmassfrac))
+  opacity = 0.02*(1 + hmassfrac)
+  
   !set up problem
   xar(1) = 0
   xar(2) = massm
@@ -28,7 +32,7 @@ program adiabatic_solver
   youter(1) = radiusstar
 
   yinner(2) = pressurec
-  youter(2) = ((2.0*G)/(3.0*0.034))*(masst/(radiusstar**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+  youter(2) = (1.0/Gbar)*(((2.0*G)/(3.0*opacity))*(masst/(radiusstar**2.0))*(MSUN/(RSUN**2.0))) !from eddington approx
 
   !unitinner header
   write(unitinner,*) "! inner stellar structure"
@@ -42,7 +46,7 @@ program adiabatic_solver
   flush(unitouter)
 
   !run solver
-  call shootingmethod(question4rkfunc,question4innerboundary,xar,yinner,youter,unitinner,unitouter) 
+  call shootingmethod(question4rkfunc,question4innerboundary,xar,yinner,youter,unitinner,unitouter,stype,1) 
 
   close(unitinner)
   close(unitouter)
@@ -54,13 +58,15 @@ program adiabatic_solver
     double precision :: x
     double precision :: y(:)  !again possibly bad practice
     double precision, dimension(size(y)) :: question4rkfunc
+    double precision :: density 
 
     !question4rkfunc(1) = (3.0/(4.0*PI))*((pressurec**(1/ratiospecificheat))/densityc)*DEXP(-y(2)/ratiospecificheat)
     !question4rkfunc(2) = - (G/(4.0*PI))*x*DEXP(-y(2))*(y(1)**(-4.0/3.0))
 
-    question4rkfunc(1) = (1/(4.0*PI))*(1/(y(1)**2))*((RGAS*tempc)/(mmolecweight*pressurec)) * &
-   & (MSUN/(RSUN**3))*((y(2)/pressurec)**(-1/ratiospecificheat))
-    question4rkfunc(2) = -(G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(RSUN**4))
+    density = ((mmolecweight*pressurec*Gbar)/(RGAS*tempc*MKELVIN))*((y(2)/pressurec)**(1.0/ratiospecificheat))
+
+    question4rkfunc(1) = (1.0/(4.0*PI*density))*(1.0/(y(1)**2))*(MSUN/(RSUN**3))
+    question4rkfunc(2) = - (G/(4.0*PI))*(x/(y(1)**4))*((MSUN**2)/(Gbar*RSUN**4))
 
   end function
 
@@ -69,9 +75,16 @@ program adiabatic_solver
     double precision :: x
     double precision :: y(:)  !again possibly bad practice
     double precision, dimension(size(y)) :: question4innerboundary
+    double precision :: density
+   
+    density = ((mmolecweight*pressurec*Gbar)/(RGAS*tempc*MKELVIN))
 
-    question4innerboundary(1) = ((3.0/(4.0*PI))*((RGAS*tempc)/(mmolecweight*pressurec))*x)**(1.0/3.0)
-    question4innerboundary(2 ) = pressurec - (2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec)/(RGAS*tempc))**2
+    question4innerboundary(1) = 1.0D-4
+
+    x = (1.0/MSUN)*((4.0*PI/3.0)*density*(question4innerboundary(1)*RSUN)**3)
+
+    !question4innerboundary(1) = (1.0/RSUN)*(((3.0/(4.0*PI*density))*x*MSUN)**(1.0/3.0))
+    question4innerboundary(2) = pressurec - (1.0/Gbar)*(2.0*PI/3.0)*G*((question4innerboundary(1)*RSUN)**2)*density**2
 
   end function
 

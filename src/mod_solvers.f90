@@ -342,7 +342,7 @@ module mod_solvers
 
     start = 1
     !iteration = 1 !test code
-    maxchange = 1.0D-4
+    maxchange = 1.0D-3
     stype_var = 0
     write_var = 1 
 
@@ -419,7 +419,8 @@ module mod_solvers
         end if
         ! this adaptive stepping need a heck of alot of work
         !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
-        dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
+        !limit to a maximum timestep
+        dxinner = MIN(MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner)))),1.0D-3)
 
         !print *, DABS((dxinner*pyinner)/((yinner - pyinner)))
         !print *, dxinner
@@ -444,7 +445,7 @@ module mod_solvers
           flush(unitouter)
         end if
 
-        dxouter = MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter))))
+        dxouter = MIN(MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter)))),1.0D-3)
         !dxouter = maxchange*DABS(dxouter*pyouter(1)/((youter(1) - pyouter(1))))
         !print *, dxouter
 

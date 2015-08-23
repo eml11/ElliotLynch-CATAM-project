@@ -68,10 +68,10 @@ program shootingsolution
     youter(1) = yparam(1)
 
     yinner(2) = yparam(2)
-    youter(2) = (1.0/Gbar)*((2.0*G)/(3.0*opacity))*(masst/(yparam(1)**2.0))*(MSUN/(RSUN**2.0)) !from eddington approx
+    youter(2) = (1.0/Gbar)*((2.0*G)/(3.0*opacity))*(masst/(yparam(1)**2))*(MSUN/(RSUN**2)) !from eddington approx
 
     yinner(3) = yparam(3)
-    youter(3) = (1.0/MKELVIN)*(((yparam(4)/(4.0*PI*STBOLTZ*(yparam(1)**2)))*(LSUN/(RSUN**2.0)))**(1.0/4.0))
+    youter(3) = (1.0/MKELVIN)*(((yparam(4)/(4.0*PI*STBOLTZ*(yparam(1)**2)))*(LSUN/(RSUN**2)))**(1.0/4.0))
 
     yinner(4) = 0.0
     youter(4) = yparam(4)
@@ -107,7 +107,7 @@ program shootingsolution
     double precision, dimension(size(y)) :: question5innerboundary
     double precision :: ppCNO_energypdc, density
 
-    density = (mmolecweight*y(2))*Gbar/(RGAS*y(3)*MKELVIN)
+    density = (mmolecweight*pressurec*Gbar)/(RGAS*tempc*MKELVIN)
    
     ppCNO_energypdc = (0.25*(hmassfrac**2)*DEXP(-33.8*(y(3)**(-1.0/3.0))) + &
    & 8.8D18*hmassfrac*DEXP(-152.28*(y(3)**(-1.0/3.0))) )* density * &
@@ -115,11 +115,12 @@ program shootingsolution
 
 
     !hacky way of ensuring r is sufficiently large
-    question5innerboundary(1) = 1.0D-4
+    question5innerboundary(1) = 1.0D-5
 
-    x = ((4.0*PI/3.0)*density*question5innerboundary(1)**3)
+    x = (1.0/MSUN)*((4.0*PI/3.0)*density*(question5innerboundary(1)*RSUN)**3)
 
-    question5innerboundary(2) = pressurec - (1.0/Gbar)*(2.0*PI/3.0)*G*(y(1)**2)*((mmolecweight*pressurec*Gbar)/(RGAS*tempc*MKELVIN))**2
+    question5innerboundary(2) = pressurec - &
+   & (1.0/Gbar)*(2.0*PI/3.0)*G*((question5innerboundary(1)*RSUN)**2)*(density**2)
    
     question5innerboundary(3) = (((tempc*MKELVIN)**4 - ((3.0*opacity)/(32.0*PI*STBOLTZ))*(1/density) * &
    & ppCNO_energypdc*((x*MSUN)**(2.0/3.0)))**(0.25))/MKELVIN

@@ -342,7 +342,7 @@ module mod_solvers
 
     start = 1
     !iteration = 1 !test code
-    maxchange = 1.0D-3
+    maxchange = 1.0D-4
     stype_var = 0
     write_var = 1 
 
@@ -374,7 +374,7 @@ module mod_solvers
       xc = xar(1)
     end if
 
-    !print *, 'input ',xar,yinner
+   ! print *, 'input ',xar,yinner
 
     do while (xinner.lt.xc .or. xouter.lt.-xc)
 
@@ -390,6 +390,7 @@ module mod_solvers
           !pyinner = yinner
           !print *, yinner
           xinner = xinner + dxinner
+          !print *, 'innerboundary ', yinner
           yinner = finnerboundary (xinner,yinner)
           !print *, yinner
           if (write_var.eq.1) then
@@ -420,13 +421,13 @@ module mod_solvers
         ! this adaptive stepping need a heck of alot of work
         !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
         !limit to a maximum timestep
-        dxinner = MIN(MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner)))),1.0D-3)
+        dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 
         !print *, DABS((dxinner*pyinner)/((yinner - pyinner)))
         !print *, dxinner
 
         if (ANY(yinner .ne. yinner)) then
-          print *, 'convergence fail ', yinner
+          print *, 'convergence fail inner : ', yinner
           stop
         end if
 
@@ -445,9 +446,14 @@ module mod_solvers
           flush(unitouter)
         end if
 
-        dxouter = MIN(MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter)))),1.0D-3)
+        dxouter = MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter))))
         !dxouter = maxchange*DABS(dxouter*pyouter(1)/((youter(1) - pyouter(1))))
         !print *, dxouter
+
+        if (ANY(youter .ne. youter)) then
+          print *, 'convergence fail outer : ', youter
+          stop
+        end if
 
       end if
 
@@ -555,7 +561,7 @@ module mod_solvers
       end if
 
  
-      er = (yinner - youter)/yparam
+      er = (yinner - youter)!/(yinner + youter)
 
       if (ALL(DABS(er) .le. targeter)) return
 
@@ -570,109 +576,80 @@ module mod_solvers
 
         yparamtmp = yparam
         yparamtmp(i) = yparam(i) + targeter
+        !yparamtmp(i) = (1.0 + targeter)*yparam(i)
 
         call boundaryconditions(xar,yinner,youter,yparamtmp)
+ !       print *, 'yinner init: ', yinner
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
+ !       print *, 'yinner mid: ', yinner
 
-        forward_er = ((yinner - youter)/yparam)
+        forward_er = (yinner - youter)!/(yinner + youter)
 
          !might change method at some point
         yparamtmp = yparam
         yparamtmp(i) = yparam(i) - targeter 
+       ! yparamtmp(i) = (1.0 - targeter)*yparam(i)
 
         call boundaryconditions(xar,yinner,youter,yparamtmp)
+!        print *, 'yinner init: ', yinner
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
+!        print *, 'yinner mid: ', yinner
 
-        backward_er = ((yinner - youter)/yparam)
+        backward_er = (yinner - youter)!/(yinner + youter)
         
         jacobian(:,i) = (forward_er - backward_er)/(2.0*targeter)
 
-       ! print *, jacobian
+        !print *, jacobian
  
       end do 
 
 
       !other convergence method
-      !dyparam = er
+     ! dyparam = er
 
       !er should actually be dyparam
-      !update_step = (DOT_PRODUCT(yparam,MATMUL(jacobian,er)) + DOT_PRODUCT(er,er) + &
-     !& 2*tradeoff*DOT_PRODUCT(yparam,er)) / &
-     !& (DOT_PRODUCT(er,MATMUL(jacobian,er)) + 2.0*tradeoff*DOT_PRODUCT(er,er))  
+    !  update_step = (DOT_PRODUCT(yparam,MATMUL(jacobian,er)) + DOT_PRODUCT(er,er) + &
+    ! & 2*tradeoff*DOT_PRODUCT(yparam,er)) / &
+    ! & (DOT_PRODUCT(er,MATMUL(jacobian,er)) + 2.0*tradeoff*DOT_PRODUCT(er,er))  
 
-      !print *, 'update step ',update_step
+    !  print *, 'update step ',update_step
 
-      !yparam = DABS(yparam + update_step*dyparam) !hacky attempt at a fix
-      !print *, 'yparam ',yparam
+    !  yparam = DABS(yparam + update_step*dyparam) !hacky attempt at a fix
+    !  print *, 'yparam ',yparam
 
       !stop
       print *,
       print *, 'er= ',er
       print *,
 
-      !print *, jacobian
+      print *, jacobian
 
 
-      determinant = DABS(householderdeterminant(jacobian))
+      regulerised_jacobian = jacobian
+
+  !    determinant = DABS(householderdeterminant(jacobian))
 
       !determinant = 1.0D-7
 
-      print *, 'determinant ',determinant
+!      print *, 'determinant ',determinant
 
       !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
 
-      jacobian = jacobian/determinant !this realy shouldn't be the case
+ !     jacobian = jacobian/determinant !this realy shouldn't be the case
 
       !basic regulerisation sceme:
 
-      !jacobian = MATMUL(jacobian,rescale)
-
-      !jacobian = jacobian*1.0D6
-
-      !print *, 'rescale', rescale
-      !print *, 'jacobian', jacobian
-
-      !if (ANY(jacobian .ne. jacobian)) then
-      !   print *, 'rescale jacobian: ', jacobian
-      !   stop
-      !end if
-      !stop
-
-      !print *, 'jacobiani: ', jacobian
-    
-      !jmax = max(jacobian,1)
-
-      !r_j_num = 0
-
-      !regulerised_jacobian = MATMUL(jacobian,TRANSPOSE(jacobian)) !note squares the condition number so watch out for that
-      !forall (i = 1:SIZE(yparam)) regulerised_jacobian(i,i) = regulerised_jacobian(i,i) + 1.0
-
-      !forall (i = 1:SIZE(yparam)) jacobian(i,i) = jacobian(i,i) + 0.01
-
-      !regulerised_jacobian = jacobian
-
-      !print *, 'calling householderinversion'
       call householderinversion(jacobian)
 
-      !if (ANY(jacobian .ne. jacobian)) then
-      !   print *, 'arcjacobian: ', jacobian
-      !   stop
-      !end if
-
-      !rint *, 'arcjacobian: ', jacobian
-      
-      !jacobian = MATMUL(jacobian,rescale)
-
-      !print *, 'ident ;', MATMUL(jacobian,regulerised_jacobian)
-
-      !print *, 'arcjacobian: ', jacobian
+      print *, 'arcjacobian: ', jacobian
+ !     print *, 'ident : ', MATMUL(jacobian,regulerised_jacobian)
 
       !print *, 'yparam: ', yparam
       !print *, er
     
       !er = MATMUL(er,TRANSPOSE(jacobian))
 
-      dyparam = -1.0*MATMUL(jacobian,er)
+      dyparam = -1.0*MATMUL(jacobian,er) ! test edit
 
       print *, 'dyparam: ', dyparam
       yparam = DABS(yparam + dyparam) 
@@ -706,6 +683,7 @@ program solvers_unit_tests
 
   !test matrix inversion
   double precision GMAT(3,3),GINV(3,3)
+  double precision xar(3),yinner(1),youter(1)
 
   GMAT = reshape((/1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,0.0/), shape(GMAT)) 
   GINV = (1.0/9.0)*reshape((/-16.0,8.0,-1.0,14.0,-7.0,2.0,-1.0,2.0,-1.0/), shape(GMAT))
@@ -718,6 +696,55 @@ program solvers_unit_tests
   print *, 'ACTUAL: ', GINV
   print *, 'er: ',(GMAT - GINV)/GINV
   print *,
+
+  print *, 
+
+  print *, 'Testting :: shootingsolution'
+  print *,
+
+  xar(1) = 0.0D0
+  xar(2) = 1.0D0
+  xar(3) = 2.0D0
+
+  yinner(1) = 1.0D0
+
+  !test in shoot
+  call shootingmethod(decay,decayinner,xar,yinner,youter,6,6,1,0)
+  print *, 'test inner'
+  print *, 'y(2.0) : ',yinner,'ACTUAL: ', DEXP(-0.2D0)
+
+
+  youter(1) = DEXP(-0.2D0)
+
+  !test out shoot
+  call shootingmethod(decay,decayinner,xar,yinner,youter,6,6,2,0)
+  print *, 'y(0.0) : ',youter,'ACTUAL: ', 1.0
+  print *, 
+
+  print *, 
+  
+
+  contains
+
+    function decay(x,y)
+
+      double precision :: x
+      double precision :: y(:)
+      double precision, dimension(SIZE(y)) :: decay
+
+      decay(1) = -0.1*y(1)
+
+    end function
+
+    function decayinner(x,y)
+
+      double precision :: x
+      double precision :: y(:)
+      double precision, dimension(SIZE(y)) :: decayinner
+    
+      decayinner(1) = y(1)
+
+    end function
 
 end program
 #endif

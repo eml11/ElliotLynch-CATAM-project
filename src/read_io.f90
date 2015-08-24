@@ -1,3 +1,7 @@
+!> Subroutine to read and process 
+!! input file
+!! @param unitinput file unit for reading
+!! @param fname filename to be read
 subroutine readinputfile (unitinput,fname)
 
   use mod_shared

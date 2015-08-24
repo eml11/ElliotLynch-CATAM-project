@@ -1,3 +1,8 @@
+!
+! MODULE: mod_solvers 
+!
+!> module containing the numerical  
+!! integrators and matrix solvers
 module mod_solvers
 
   use mod_shared
@@ -6,6 +11,11 @@ module mod_solvers
 
   contains
 
+  !> Fourth order Runge-Kutta step
+  !! @param f function to be integrated
+  !! @param x independent variable
+  !! @param y array of dependent variables
+  !! @param dx step size
   subroutine rk4step (f,x,y,dx)
 
     implicit none
@@ -17,48 +27,27 @@ module mod_solvers
         double precision, dimension(size(yout)) :: f    
       end function
     end interface
-    !double precision, external :: f(:)
+    
     double precision :: y(:)
     double precision :: x, dx
 
-    double precision, dimension(SIZE(y)) :: k1,k2,k3,k4 !these are arrays
-
-    !allocate (k1(SIZE(y))) !obviously not efficient to continually allocate/deallocate arrays
-    !allocate (k2(SIZE(y)))
-    !allocate (k3(SIZE(y)))
-    !allocate (k4(SIZE(y)))
+    double precision, dimension(SIZE(y)) :: k1,k2,k3,k4
 
     k1 = f(x,y)
-    !print *, 'k1'
     k2 = f(x + (dx/2.0),y + (dx/2.0)*k1)
-    !print *, 'k2'
     k3 = f(x + (dx/2.0),y + (dx/2.0)*k2) 
-    !print *, 'k3'
     k4 = f(x + dx,y + dx*k3)
-    !print *, 'k4'
-
-    !print *, k1
-    !print *, k2
-    !print *, k3
-    !print *, k4
-
-
-    !print *, y
-
-    !print *, (1.0/6.0)*(k1 + 2*k2 + 2*k3 + k4)
 
     y = y + (dx/6.0)*(k1 + 2*k2 + 2*k3 + k4)
     x = x + dx
 
- !   deallocate(k1)
- !   deallocate(k2)
- !   deallocate(k3)
- !   deallocate(k4)
-
   end subroutine 
 
-
-  !possibly computing L matrix - owing to dimension flip
+  !> Computes matrix determinant using householder
+  !! algorithm, transforms to L Matrix and computes
+  !! product of the diagonal
+  !! @param G input matrix
+  !! @return householderdeterminant determinant of G
   function householderdeterminant(G)
 
     double precision :: G(:,:)
@@ -73,24 +62,11 @@ module mod_solvers
 
     integer i,j
 
-
-
-    !pivot G
-    !very simple to get to work
-
     pivot = 0
-    !QT = 0
-    !forall (j = 1:SIZE(G(:,1))) QT(j,j) = 1.0
     forall (j = 1:SIZE(G(:,1))) pivot(j,j) = 1.0
-
-    !alot of muddling of dimensions
-    !also requires square - actual 
-    !householder does not
 
     UMAT = G
     householderdeterminant = 1.0
-    
-
     do i=1,SIZE(G(:,1))
 
       !preform simple pivot
@@ -111,7 +87,7 @@ module mod_solvers
           j=0
           do
             j=j+1
-            if (UMAT(j,i).ne.0) exit !should add error for not being possible to find pivot
+            if (UMAT(j,i).ne.0) exit
           end do
 
           bufar=UMAT(:,i)
@@ -124,7 +100,7 @@ module mod_solvers
         end if
       end if
 
-
+      !compute orthoganal vector
       eorthoganal = (/(j, j=1,SIZE(G(:,1)))/)
       where (eorthoganal.eq.i)
         eorthoganal=-1.0*SIGN(1.0D0,UMAT(i,i))*NORM2(UMAT(i,i:))
@@ -135,24 +111,25 @@ module mod_solvers
       u = UMAT(i,:)
       u(i:) = UMAT(i,i:) - eorthoganal(i:)
 
+      !compute rotation matrix
       P = 0.0
       forall (j = 1:SIZE(G(:,1))) P(j,j) = 1.0
 
       P(i:,i:) = P(i:,i:) - 2.0*(spread(u(i:),1,SIZE(G(:,1)) + 1 - i)*spread(u(i:),2,SIZE(G(1,:)) + 1 - i)) &
      &/(DOT_PRODUCT(u(i:),u(i:)))
 
-      !G(i,i:) = eorthoganal(i:)!this is wrong
       UMAT = MATMUL(UMAT,P)
 
-      print *, 'G householder',UMAT
-
+      !Multiply diagonal element to return value
       householderdeterminant = householderdeterminant*eorthoganal(i)
     end do
 
   end function
  
-
-  !possibly computing L matrix - owing to dimension flip
+  !> Inverts matrix using a householder reflection
+  !! algorithm, transforms to Lower Matrix and solves
+  !! by back substitution.
+  !! @param G matrix to be inverted, currently must be square
   subroutine householderinversion (G)
 
     double precision :: G(:,:)
@@ -161,24 +138,15 @@ module mod_solvers
     double precision :: QT(SIZE(G(:,1)),SIZE(G(1,:)))
     double precision :: bufar(SIZE(G(:,1)))
     double precision :: pivot(SIZE(G(:,1)),SIZE(G(:,1)))
-    !SHAPE(G)
     integer i,j
-
-    
-
-    !pivot G
-    !very simple to get to work
 
     pivot = 0
     QT = 0
     forall (j = 1:SIZE(G(:,1))) QT(j,j) = 1.0
     forall (j = 1:SIZE(G(:,1))) pivot(j,j) = 1.0
 
-    !alot of muddling of dimensions
-    !also requires square - actual 
-    !householder does not
     do i=1,SIZE(G(:,1))     
-  
+    
       !preform simple pivot
       if (i.ge.SIZE(G(:,1))-1) then
         if (G(SIZE(G(:,1)),SIZE(G(:,1))).eq.0 .or. G(SIZE(G(:,1))-1,SIZE(G(:,1))-1).eq.0) then
@@ -197,7 +165,7 @@ module mod_solvers
           j=0
           do
             j=j+1
-            if (G(j,i).ne.0) exit !should add error for not being possible to find pivot
+            if (G(j,i).ne.0) exit
           end do
           
           bufar=G(:,i)
@@ -209,10 +177,8 @@ module mod_solvers
           pivot(:,i+j)=bufar
         end if
       end if
-
-      !print *, 'testdim ',G(i,:)
-      !print *, G(i,i:)
-
+     
+      !compute orthoganal vector
       eorthoganal = (/(j, j=1,SIZE(G(:,1)))/)
       where (eorthoganal.eq.i)
         eorthoganal=-1.0*SIGN(1.0D0,G(i,i))*NORM2(G(i,i:))
@@ -223,88 +189,42 @@ module mod_solvers
       u = G(i,:)
       u(i:) = G(i,i:) - eorthoganal(i:)
   
-      !print *, 'rho: ',u(i)
-
+      !compute rotation matrix
       P = 0.0
       forall (j = 1:SIZE(G(:,1))) P(j,j) = 1.0
 
       P(i:,i:) = P(i:,i:) - 2.0*(spread(u(i:),1,SIZE(G(:,1)) + 1 - i)*spread(u(i:),2,SIZE(G(1,:)) + 1 - i)) &
      &/(DOT_PRODUCT(u(i:),u(i:)))
 
-      !QT(i:,i:) = MATMUL(P(i:,i:),QT(i:,i:)) !this is most likely currently wrong
-      !QT = MATMUL(P,QT)
-       QT = MATMUL(QT,P)
+      !compute transpose of Q matrix
+      QT = MATMUL(QT,P)
 
-      !G(i,i:) = eorthoganal(i:)!this is wrong
+      !update R matrix computation
       G = MATMUL(G,P)
   
-      !print *, 'R ', G
     end do  
 
-    !print *, 'umat: ',G
-
-    !print *, 'QT ',QT!this is too small
-
-    !appears to be preforming rotations but by incorrect value
-
-    !print *,
-    !print *, 'original G: ', MATMUL(G,TRANSPOSE(QT)) !returning original G
-    !print *,
-
-    !print *, pivot
-
-    !do i=1,SIZE(QT(:,1))!this isn't pivoting, check which is supposed to be pivoted
-    !  if (pivot(i).eq.0) CYCLE
-    !  print *, QT(:,i)
-    !  print *, QT(:,pivot(i))
-    !  print *, 'pivot',i
-    !  bufar=QT(:,i)
-    !  QT(:,i)=QT(:,pivot(i))
-    !  QT(:,pivot(i))=bufar
-    !end do
-
-    !print *, 'QT pivot ',QT
-
-    !print *, 'test'
-    !watch out for zeros
-    !only works for square
-    do i=SIZE(G(:,1)),1,-1 !this inversion now correct
-      !this is possibly wrong dim
-      !print *,
-      !print *, QT(:,i+1:)
-      !print *, G(i,i)
-      !print *, SUM(SPREAD(G(i+1:,i),1,SIZE(G(:,1)))*QT(:,i+1:),2)
-      !print *, QT(:,i)
-      !print *,
+    !back substitution
+    do i=SIZE(G(:,1)),1,-1
       QT(:,i) = (QT(:,i) - SUM(SPREAD(G(i+1:,i),1,SIZE(G(:,1)))*QT(:,i+1:),2))/G(i,i)
-      !print *, 'inverse step: ',QT
     end do
 
-    !want to pivot after multiplication
-
-    !print *, 'test2'
-
-    !print *, SHAPE(G)
-
-    
-    !G = QT
-
-
-    !need to pivot back
-    G = MATMUL(QT,pivot)!this should be swapted?
-    !do i=1,SIZE(G(:,1))
-    !  if (pivot(i).eq.0) CYCLE
-    !  bufar=G(:,i)
-    !  G(:,i)=G(:,pivot(i))
-    !  G(:,pivot(i))=bufar
-    !end do
-    !print *, G
-    !print *, QT
-
-    !print *, 'test3'
+    !reverse pivot
+    G = MATMUL(QT,pivot)
 
   end subroutine
 
+  !> Shooting method integration using 4th order Runge-Kutta
+  !! with an adaptive step size.
+  !! @param f function to be integrated
+  !! @param finnerboundary function for initial step for inner integral
+  !! @param xar integration bounds
+  !! @param yinner dependent variables for inner integral
+  !! @param youter dependent variables for outer integral
+  !! @param unitinner file unit for inner integral output
+  !! @param unitouter file unit for outer integral output
+  !! @param stype_flag optional integration direction; in,out,inout
+  !! @param write_flag optional write integration to file
   subroutine shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_flag,write_flag)
  
     implicit none
@@ -336,18 +256,17 @@ module mod_solvers
 
     integer :: unitinner,unitouter
 
-    integer :: start != 1
+    integer :: start
 
     integer :: iteration !test code
 
     start = 1
-    !iteration = 1 !test code
     maxchange = 1.0D-4
     stype_var = 0
     write_var = 1 
 
-
-    if (present(stype_flag)) then !is this nesicary?
+    !optional variables
+    if (present(stype_flag)) then
       stype_var = stype_flag
     end if
 
@@ -355,12 +274,14 @@ module mod_solvers
       write_var = write_flag
     end if
 
+    !setup integration
     xinner = xar(1)
     xouter = -xar(3)
 
     dxinner = 1.0D-10
     dxouter = 1.0D-10
 
+    !write initial conditions
     if (write_var.eq.1) then
       write(unitinner,*) xinner, yinner
       write(unitouter,*) -xouter, youter
@@ -374,57 +295,34 @@ module mod_solvers
       xc = xar(1)
     end if
 
-   ! print *, 'input ',xar,yinner
-
     do while (xinner.lt.xc .or. xouter.lt.-xc)
 
-
-
+      !inner integral
       if (xinner.lt.xc .and. (stype_var.eq.0 .or. stype_var.eq.1)) then
 
-        !this is most likely unstable
-
-        !note not general
+        !first step - avoid divide by zero issue
         if (start.eq.1) then
- 
-          !pyinner = yinner
-          !print *, yinner
+        
           xinner = xinner + dxinner
-          !print *, 'innerboundary ', yinner
           yinner = finnerboundary (xinner,yinner)
-          !print *, yinner
           if (write_var.eq.1) then
             write(unitinner,*) xinner, yinner
           end if 
-
-          !dxinner = MAX(MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner)))),1.0D-10)!hacky way of doing this
-          !print *, dxinner
-          !random test fix
-          !if (yinner(1) .ge. 0.1) then
           start = 0
-          !stop
-          !end if
-          !print *, 'start ',start
+
         end if
 
-        !print *, yinner
-
         pyinner = yinner
-
-     !   print *, "iteration - inner loop",iteration 
-
+        
+        !preform rk step
         call rk4step (f,xinner,yinner,dxinner)
         if (write_var.eq.1) then
           write(unitinner,*) xinner, yinner
           flush(unitinner)
         end if
-        ! this adaptive stepping need a heck of alot of work
-        !dxinner = maxchange*DABS((dxinner*pyinner(1))/((yinner(1) - pyinner(1))))
-        !limit to a maximum timestep
-        dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 
-        !print *, DABS((dxinner*pyinner)/((yinner - pyinner)))
-        !print *, dxinner
+        !compute stepsize
+        dxinner = MINVAL(maxchange*DABS((dxinner*pyinner)/((yinner - pyinner))))
 
         if (ANY(yinner .ne. yinner)) then
           print *, 'convergence fail inner : ', yinner
@@ -433,22 +331,20 @@ module mod_solvers
 
       end if 
 
-     ! stop
-
+      !outer integral step
       if (xouter.lt.-xc .and. (stype_var.eq.0 .or. stype_var.eq.2)) then
 
         pyouter = youter
 
-      !  print *, "iteration - outer loop",iteration
+        !preform rk step
         call rk4step (fouter,xouter,youter,dxouter)
         if (write_var.eq.1) then
           write(unitouter,*) -xouter, youter
           flush(unitouter)
         end if
 
+        !compute stepsize
         dxouter = MINVAL(maxchange*DABS(dxouter*pyouter/((youter - pyouter))))
-        !dxouter = maxchange*DABS(dxouter*pyouter(1)/((youter(1) - pyouter(1))))
-        !print *, dxouter
 
         if (ANY(youter .ne. youter)) then
           print *, 'convergence fail outer : ', youter
@@ -457,15 +353,15 @@ module mod_solvers
 
       end if
 
-      !iteration = iteration + 1 !test code
-      !print *,
-
-      !call sleep(5)
-
     end do
 
     contains
 
+    !> Helper function to deal with reversal of
+    !! integration direction for outer integration
+    !! @param x independent variable
+    !! @param y array of dependent variables
+    !! @return fouter array of derivatives of y wrt x
     function fouter(x,y)
       double precision :: x
       double precision :: y(:)
@@ -477,6 +373,17 @@ module mod_solvers
 
   end subroutine
 
+  !> Uses shooting method and jacobian iteration to refine
+  !! array of input parameters to yeild desired relative error
+  !! @param f function to be integrated
+  !! @param finnerboundary function for initial step for inner integral
+  !! @param boundaryconditions function to compute initial conditions from
+  !! yparam
+  !! @param xar integration bounds
+  !! @param yparam array of parameters to be refined
+  !! @param unitinner file unit for inner integral output
+  !! @param unitouter file unit for outer integral output
+  !! @param stype_flag optional integration direction; in,out,inout
   subroutine jacobian_solver(f,finnerboundary,boundaryconditions,xar,yparam,unitinner,unitouter,stype_flag)
 
     implicit none
@@ -506,8 +413,6 @@ module mod_solvers
     double precision :: xar(3)
   
     double precision :: yparamtmp(SIZE(yparam))
-    double precision :: rescale(SIZE(yparam),SIZE(yparam))
-    !double precision :: delta_er(SIZE(yparam))
 
     double precision :: dxinner, dxouter
 
@@ -515,43 +420,25 @@ module mod_solvers
 
     double precision :: jacobian(SIZE(yparam),SIZE(yparam))
     double precision :: jmax(SIZE(yparam))
-    double precision :: regulerised_jacobian(SIZE(yparam),SIZE(yparam))
     integer :: r_j_num
 
     double precision :: er(SIZE(yparam)),forward_er(SIZE(yparam)),backward_er(SIZE(yparam))
     double precision :: dyparam(SIZE(yparam))
     double precision :: targeter = 1.0D-5
-    
-    !double precision :: objective
-    double precision :: update_step
-    double precision :: tradeoff
-
-    double precision :: determinant
 
     integer :: i
 
+    !optional variable
     if (present(stype_flag)) then
       stype_var = stype_flag
       print *, "stype_flag is set"
     end if
 
-    tradeoff = 0.1
-
-    !call boundaryconditions(xar,yinner,youter,yparam)
-
     do !note currently only supports INOUT
 
-      !print *, "setting boundary conditions"
+      !call shooting method to compute error
       call boundaryconditions(xar,yinner,youter,yparam)
-
-      print *, 'boudary condition ',yinner,youter     
- 
-      !print *, 'xar=',xar, " yinner=", yinner, " youter=", youter, " yparam=", yparam
-
-      !print *, 'calling shooting methoid'
       call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-     
-      print *, 'yinner youter',yinner,youter 
 
       if (ANY(yinner .ne. yinner)) then
         call boundaryconditions(xar,yinner,youter,yparam)
@@ -559,117 +446,47 @@ module mod_solvers
         print *, 'nan in yinner ', yinner
         stop
       end if
-
  
-      er = (yinner - youter)!/(yinner + youter)
+      er = yinner - youter
 
+      !exit condition
       if (ALL(DABS(er) .le. targeter)) return
 
-
-!      objective = er**2.0 + 0.01*yparam**2
-
-      !conjugate gradient method:
-
-    
-
+      !loop over parameters in jacobian
       do i=1,SIZE(yparam)
 
+        !forward step
         yparamtmp = yparam
         yparamtmp(i) = yparam(i) + targeter
-        !yparamtmp(i) = (1.0 + targeter)*yparam(i)
 
         call boundaryconditions(xar,yinner,youter,yparamtmp)
- !       print *, 'yinner init: ', yinner
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
- !       print *, 'yinner mid: ', yinner
 
-        forward_er = (yinner - youter)!/(yinner + youter)
+        forward_er = yinner - youter
 
-         !might change method at some point
+        !backward step
         yparamtmp = yparam
         yparamtmp(i) = yparam(i) - targeter 
-       ! yparamtmp(i) = (1.0 - targeter)*yparam(i)
 
         call boundaryconditions(xar,yinner,youter,yparamtmp)
-!        print *, 'yinner init: ', yinner
         call shootingmethod(f,finnerboundary,xar,yinner,youter,unitinner,unitouter,stype_var,0)
-!        print *, 'yinner mid: ', yinner
 
-        backward_er = (yinner - youter)!/(yinner + youter)
+        backward_er = yinner - youter
         
         jacobian(:,i) = (forward_er - backward_er)/(2.0*targeter)
-
-        !print *, jacobian
  
       end do 
 
-
-      !other convergence method
-     ! dyparam = er
-
-      !er should actually be dyparam
-    !  update_step = (DOT_PRODUCT(yparam,MATMUL(jacobian,er)) + DOT_PRODUCT(er,er) + &
-    ! & 2*tradeoff*DOT_PRODUCT(yparam,er)) / &
-    ! & (DOT_PRODUCT(er,MATMUL(jacobian,er)) + 2.0*tradeoff*DOT_PRODUCT(er,er))  
-
-    !  print *, 'update step ',update_step
-
-    !  yparam = DABS(yparam + update_step*dyparam) !hacky attempt at a fix
-    !  print *, 'yparam ',yparam
-
-      !stop
-      print *,
-      print *, 'er= ',er
-      print *,
-
-      print *, jacobian
-
-
-      regulerised_jacobian = jacobian
-
-  !    determinant = DABS(householderdeterminant(jacobian))
-
-      !determinant = 1.0D-7
-
-!      print *, 'determinant ',determinant
-
-      !forall (i = 1:SIZE(yparam)) jacobian(:,i) = jacobian(:,i)/MAXVAL(DABS(jacobian(:,i)) + targeter)
-
- !     jacobian = jacobian/determinant !this realy shouldn't be the case
-
-      !basic regulerisation sceme:
-
+      !invert jacobian
       call householderinversion(jacobian)
-
-      print *, 'arcjacobian: ', jacobian
- !     print *, 'ident : ', MATMUL(jacobian,regulerised_jacobian)
-
-      !print *, 'yparam: ', yparam
-      !print *, er
-    
-      !er = MATMUL(er,TRANSPOSE(jacobian))
-
-      dyparam = -1.0*MATMUL(jacobian,er) ! test edit
-
-      print *, 'dyparam: ', dyparam
+      
+      !preform parameter update
+      dyparam = -1.0*MATMUL(jacobian,er)
       yparam = DABS(yparam + dyparam) 
-
-     ! stop
-
-      !call sleep(5)
 
     end do
 
   end subroutine
-
-  !function condition_number(G)
-
-  !  double precision :: G(:,:)
-  !  double precision :: condition_number
-
-    
-
-  !end function
 
 end module
 

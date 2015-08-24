@@ -1,3 +1,8 @@
+!
+! MODULE: mod_shared 
+!
+!> Contains common varibles. Physical Constants, 
+!! Scaling parameters and variables for file input
 module mod_shared
 
   double precision :: massm
@@ -12,7 +17,6 @@ module mod_shared
   double precision :: luminosity0
   integer :: stype = 0
 
-  integer, parameter :: sleepval = 1
   double precision, parameter :: G = 6.674D-11
   double precision, parameter :: PI = 4*DATAN(1.D0)
   double precision, parameter :: STBOLTZ = 5.67D-8 

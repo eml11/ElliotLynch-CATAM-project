@@ -24,8 +24,6 @@ else:
 
   data = np.concatenate((inner,outer),axis=0)
 
-#data = outer
-
 gamma = 5./3.
 
 rsun = 6.9598e8
@@ -34,24 +32,8 @@ gbar = 1.0e14
 mkelvin = 1.0e6
 lsun=3.8515e26
 
-#mass_max = data[-1,0]
-#radiusvar_max = data[-1,1]
-#pressurevar_max = data[0,2]
-#tmax = data[0,3]
-#lummax =  data[-1,4]
-
-#Temperature = data[:,3]
-
-#print
-#print 'Stellar Parameters'
 print
-#print 'Surface'
-#print 'Temperature: ', Temperature[-1]
-#print 'Radius: ', radiusvar_max
 print
-#print 'Core'
-#print 'Temperature: ', Temperature[0]
-#print 'Pressure: ', pressurevar_max
 print
 if len(sysargs) == 1:
   print 'Error'
@@ -59,16 +41,6 @@ if len(sysargs) == 1:
   print 'Pressure: ',  np.abs((inner[-1,2] - outer[0,2])/inner[-1,2])
   print 'Temperature: ',  np.abs((inner[-1,3] - outer[0,3])/inner[-1,3])
   print 'Luminosity: ',  np.abs((inner[-1,4] - outer[0,4])/inner[-1,4])
-
-
-
-
-
-#pb.plot(data[:,0]/mass_max,data[:,1]/radiusvar_max,'k',linewidth=2.0,label='Normalised R')
-#pb.plot(data[:,0]/mass_max,data[:,2]/pressurevar_max,'k:',linewidth=2.0,label='Normalised P')
-#pb.plot(data[:,0]/mass_max,data[:,3]/tmax,'k--',linewidth=2.0,label='Normalised T')
-#pb.plot(data[:,0]/mass_max,data[:,4]/lummax,'k-.',linewidth=2.0,label='Normalised L')
-#pb.plot(data[:,0]/mass_max,linewidth=2.0,label='Normalised T^4')
 
 fig, ax1 = plt.subplots()
 
@@ -105,14 +77,5 @@ ax1.set_ylim(0,1.5)
 ax2.set_ylim(0,220)
 ax3.set_ylim(0,65)
 ax1.set_xlim(0,3.0)
-#ax2.set_xlim(0,3.0)
-
 
 plt.show()
-
-
-#pb.xlabel('Normalised Mass')
-
-#pb.legend(loc='best')
-#pb.show()
-

@@ -36,13 +36,13 @@ program adiabatic_solver
 
   !unitinner header
   write(unitinner,*) "! inner stellar structure"
-  write(unitinner,*) "mass radius P"
+  write(unitinner,*) "Mass Radius P"
   flush(unitinner) !not sure why this is suddenly necessary
 
 
   !unitouter header
   write(unitouter,*) "! outer stellar structure"
-  write(unitouter,*) "mass radius P"
+  write(unitouter,*) "Mass Radius P"
   flush(unitouter)
 
   !run solver

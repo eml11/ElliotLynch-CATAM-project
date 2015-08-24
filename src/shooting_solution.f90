@@ -34,7 +34,7 @@ program shootingsolution
     open(unit=unitinner,FILE='stellarstructure_inner.txt')
 
     write(unitinner,*) "! inner stellar structure"
-    write(unitinner,*) "mass radius P Temp L"
+    write(unitinner,*) "Mass Radius P Temp L"
     flush(unitinner) !not sure why this is suddenly necessary
   end if
 
@@ -43,7 +43,7 @@ program shootingsolution
     open(unit=unitouter,FILE='stellarstructure_outer.txt')
 
     write(unitouter,*) "! outer stellar structure"
-    write(unitouter,*) "mass radius P Temp L"
+    write(unitouter,*) "Mass Radius P Temp L"
     flush(unitouter)
   end if
 

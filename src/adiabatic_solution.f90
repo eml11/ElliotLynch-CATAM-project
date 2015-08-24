@@ -66,7 +66,7 @@ program adiabatic_solver
   function question4rkfunc (x,y)
 
     double precision :: x
-    double precision :: y(:)  !again possibly bad practice
+    double precision :: y(:)
     double precision, dimension(size(y)) :: question4rkfunc
     double precision :: density 
 
@@ -85,7 +85,7 @@ program adiabatic_solver
   function question4innerboundary (x,y)
 
     double precision :: x
-    double precision :: y(:)  !again possibly bad practice
+    double precision :: y(:)
     double precision, dimension(size(y)) :: question4innerboundary
     double precision :: density
    

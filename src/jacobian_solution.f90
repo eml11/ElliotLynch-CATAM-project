@@ -140,10 +140,10 @@ program stellarstructure
   !! @param x mass indepenent variable
   !! @param y array of dependent variables
   !! @return question4innerboundary array of dependent variables at R=1.0D-5
-  function question5innerboundary (x,y) !this is inconsistent
+  function question5innerboundary (x,y) 
 
     double precision :: x
-    double precision :: y(:)  !again possibly bad practice
+    double precision :: y(:)
     double precision, dimension(size(y)) :: question5innerboundary
     double precision :: ppCNO_energypdc, density
 

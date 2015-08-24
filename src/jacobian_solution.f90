@@ -7,9 +7,9 @@ program stellarstructure
   implicit none
   
   double precision :: xar(3)
-  double precision :: yinner(4), youter(4),  yparam(4)
-  integer :: unitinner = 101,unitouter = 102
-  integer :: unitinput = 103
+  double precision :: yinner(4), youter(4),  yparam(4), er(4)
+  integer :: unitinner = 101,unitouter = 102,unitparameters=103
+  integer :: unitinput = 104
 
   double precision :: opacity
   double precision :: mmolecweight
@@ -44,7 +44,7 @@ program stellarstructure
     open(unit=unitinner,FILE='stellarstructure_inner.txt')
 
     write(unitinner,*) "! inner stellar structure"
-    write(unitinner,*) "mass radius P Temp L"
+    write(unitinner,*) "Mass Radius P Temp L"
     flush(unitinner) !not sure why this is suddenly necessary
   end if
 
@@ -53,7 +53,7 @@ program stellarstructure
     open(unit=unitouter,FILE='stellarstructure_outer.txt')
 
     write(unitouter,*) "! outer stellar structure"
-    write(unitouter,*) "mass radius P Temp L"
+    write(unitouter,*) "Mass Radius P Temp L"
     flush(unitouter)
   end if
 
@@ -64,8 +64,24 @@ program stellarstructure
   call question5boundcond(xar,yinner,youter,yparam)
   call shootingmethod(question5rkfunc,question5innerboundary,xar,yinner,youter,unitinner,unitouter,stype,1)
 
+  er = 2.0*((yinner - youter)/(yinner + youter))
+
+  !write parameter output
+  open(unit=unitparameters,FILE='parameters.txt')
+
+  write(unitparameters,*) '! stellar parameters and errors'
+  write(unitparameters,*)
+
+  write(unitparameters,*) 'Parameter Value IMidpoint OMidpoint Error'
+
+  write(unitparameters,*) 'Radius', yparam(1), yinner(1), youter(1), er(1)
+  write(unitparameters,*) 'Pressure', yparam(2), yinner(2), youter(2), er(2)
+  write(unitparameters,*) 'Temperature', yparam(3), yinner(3), youter(3), er(3)
+  write(unitparameters,*) 'Luminosity', yparam(4), yinner(4), youter(4), er(4)
+
   close(unitinner)
   close(unitouter)
+  close(unitparameters)
 
   contains
 

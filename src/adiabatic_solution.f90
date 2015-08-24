@@ -1,7 +1,7 @@
 !
 ! PROGRAM: adiabatic_solver  
 !
-!> Solves the equations of stellar structure using
+!> Shooting Solution for the equations of stellar structure using
 !! the adiabatic approximation for the eos.
 program adiabatic_solver
 

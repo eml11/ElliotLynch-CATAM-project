@@ -18,11 +18,6 @@ if len(sysargs) > 1:
     outer = np.loadtxt('./stellarstructure_outer.txt',skiprows=2)[::-1]
 
     data = np.concatenate((inner,outer),axis=0)
-else:
-  inner = np.loadtxt('./stellarstructure_inner.txt',skiprows=2)
-  outer = np.loadtxt('./stellarstructure_outer.txt',skiprows=2)[::-1]
-
-  data = np.concatenate((inner,outer),axis=0)
 
 gamma = 5./3.
 
@@ -35,7 +30,7 @@ lsun=3.8515e26
 print
 print
 print
-if len(sysargs) == 1:
+if sysargs[1]=='inout':
   print 'Error'
   print 'Radius: ', np.abs((inner[-1,1] - outer[0,1])/inner[-1,1])
   print 'Pressure: ',  np.abs((inner[-1,2] - outer[0,2])/inner[-1,2])
@@ -78,4 +73,4 @@ ax2.set_ylim(0,220)
 ax3.set_ylim(0,65)
 ax1.set_xlim(0,3.0)
 
-plt.show()
+plt.savefig(sys.argv[2])

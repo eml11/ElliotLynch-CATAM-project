@@ -9,6 +9,7 @@ ADIABAT=$(BIN)/stellar_adiabat
 SHOOT=$(BIN)/shooting_solution
 SRC=$(BASE)/src
 SOLVERSTEST=$(BIN)/solvers_unit_test
+EXAMPLEDIR=$(BASE)/examples
 
 all: $(STAR) $(ADIABAT) $(SHOOT)
 
@@ -47,6 +48,12 @@ test: $(SRC)/mod_solvers.f90
 	cd $(SRC); $(CC) $(CFLAGS) -fbounds-check -Dunittest mod_solvers.f90 -o $(SOLVERSTEST)
 	$(SOLVERSTEST)
 
+.PHONY: examples
+examples:
+	cd $(EXAMPLEDIR); $(MAKE)
+
+.PHONY: clean
 clean: 
-	rm src/*.o
-	rm src/*.mod
+	rm -f src/*.o
+	rm -f src/*.mod
+	cd $(EXAMPLEDIR); $(MAKE) clean

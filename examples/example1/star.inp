@@ -1,0 +1,10 @@
+!setup file for question4
+
+SHOOTTYPE   INOUT
+RADIUSS     1.5D0
+GAMMA       1.66667D0
+MASSM       1.5D0
+MASST       3.0D0
+PRESSUREC   15.3D0
+TEMPC       15.2D0
+HMASSF      0.7

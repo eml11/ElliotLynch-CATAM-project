@@ -99,8 +99,8 @@ plots = plot1 + plot2 + plot3 + plot4
 labls = [l.get_label() for l in plots]
 ax3.legend(plots,labls,loc='best')
 
-ax1.grid()
-ax1.minorticks_on()
+#ax1.grid()
+#ax1.minorticks_on()
 ax1.set_ylim(0,1.5)
 ax2.set_ylim(0,250)
 ax3.set_ylim(0,70)

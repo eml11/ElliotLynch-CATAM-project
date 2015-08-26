@@ -14,4 +14,5 @@ stellarstructure_inner.txt stellarstructure_outer.txt :star.inp $(SOLVER)
 
 clean:
 	rm -f stellarstructure_inner.txt stellarstructure_outer.txt
+	rm -f parameters.txt
 	rm -f example4_figure.png

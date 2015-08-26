@@ -7,6 +7,11 @@ make
 To run examples type:
 make examples
 
+This has been tested on OS X Yosemette
+and Ubuntu 14.04 LTS
+
+requires: gfortran 4.8 or later
+
 binaries will be located in : bin/
 
 binaries:

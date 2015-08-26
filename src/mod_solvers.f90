@@ -431,7 +431,6 @@ module mod_solvers
     !optional variable
     if (present(stype_flag)) then
       stype_var = stype_flag
-      print *, "stype_flag is set"
     end if
 
     do !note currently only supports INOUT
@@ -450,7 +449,7 @@ module mod_solvers
       er = yinner - youter
 
       !exit condition
-      if (ALL(DABS(er) .le. targeter)) return
+      if (ALL(DABS(er) .le. 0.5*(yinner + youter)*targeter)) return
 
       !loop over parameters in jacobian
       do i=1,SIZE(yparam)
